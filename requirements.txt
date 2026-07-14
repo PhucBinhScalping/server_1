@@ -1,0 +1,7 @@
+pandas
+requests
+user_agent
+html5lib
+bs4
+openpyxl
+RStockvn
