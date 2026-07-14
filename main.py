@@ -10,7 +10,7 @@ import openpyxl
 import plotly.express as px
 import plotly.io as pio
 
-# Khởi tạo User-Agent toàn cục tránh bị block
+# Khởi tạo User-Agent toàn cục để tránh bị hệ thống API chặn kết nối
 global head
 head = {"User-Agent": random_user()}
 
@@ -33,7 +33,7 @@ def get_data_index():
         return pd.DataFrame()
 
 # =====================================================================
-# HÀM TÍNH TOÁN DỮ LIỆU CỔ PHIẾU (AN TOÀN TUYỆT ĐỐI)
+# HÀM TÍNH TOÁN DỮ LIỆU CỔ PHIẾU (TỰ ĐỘNG BẢO VỆ CHỐNG SẬP)
 # =====================================================================
 def tinh_du_lieu_cp(symbol):
     try:
@@ -53,7 +53,7 @@ def tinh_du_lieu_cp(symbol):
 
         first_row = data.iloc[0]
         
-        # Ép toàn bộ kiểu dữ liệu về float tiêu chuẩn của Python (Sửa lỗi openpyxl không nhận định dạng)
+        # Ép kiểu dữ liệu về float tiêu chuẩn của Python để openpyxl không báo lỗi định dạng
         gia_close = float(pd.to_numeric(first_row['close'], errors='coerce'))
         KL1000 = float(pd.to_numeric(first_row['volumn'], errors='coerce') / 1000)
         BD_gia = float(pd.to_numeric(first_row['pctChange'], errors='coerce') / 100)
@@ -75,39 +75,40 @@ def tinh_du_lieu_cp(symbol):
         giam_sdinh = float((gia_close - dinh2t) / dinh2t if dinh2t > 0 else 0)
         tang_sday = float((gia_close - day2t) / day2t if day2t > 0 else 0)
 
+        # Trả về mảng dữ liệu đầy đủ 11 chỉ số tương ứng các cột Excel của bạn
         return [gia_close, KL1000, BD_gia, KLTB_KLTB21, gia_tbgia5, KL_KLTB5, dinh_day, day2t, dinh2t, tang_sday, giam_sdinh]
     except Exception as e:
-        # Nếu lỗi (ví dụ mã ngừng giao dịch), trả về None để bỏ qua an toàn
+        # Nếu lỗi mạng hoặc mã lỗi, trả về None để bỏ qua an toàn
         return None
 
 # =====================================================================
-# HÀM TIẾN TRÌNH CHÍNH
+# HÀM TIẾN TRÌNH CHÍNH (ĐỌC EXCEL -> TÍNH TOÁN -> GHI LẠI -> VẼ BIỂU ĐỒ)
 # =====================================================================
 def main():
-    print("=== KHỞI CHẠY HỆ THỐNG PHÂN TÍCH 1000 MÃ AN TOÀN ===")
+    print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU FILE EXCEL ===")
     file_path = "THONG_KE_VNINDEX_VN30.xlsm"
     
     try:
         wb = openpyxl.load_workbook(file_path, keep_vba=True)
     except Exception as e:
-        print(f"Không thể mở file Excel {file_path}: {e}")
+        print(f"Lỗi: Không tìm thấy hoặc không mở được file Excel {file_path}: {e}")
         return
 
     summary_data = []
     
-    # 1. Vòng lặp quét an toàn qua từng Sheet ngành
+    # 1. Duyệt qua từng Sheet ngành trong file Excel để cập nhật số liệu
     for sheet_name in wb.sheetnames:
-        # Loại trừ các sheet hệ thống giao diện
+        # Loại trừ các sheet hệ thống và sheet giao diện chính
         if sheet_name.lower() in ["dashboard", "index", "summary", "sheet1", "sheet2"]:
             continue
             
         sheet = wb[sheet_name]
-        print(f"-> Đang tổng hợp số liệu ngành: {sheet_name}")
+        print(f"-> Đang xử lý ngành: {sheet_name}")
         
         row_idx = 2
         symbols = []
         
-        # Đọc danh sách mã ở cột A
+        # Đọc danh sách mã ở cột A cho đến khi gặp ô trống
         while True:
             cell_val = sheet.cell(row=row_idx, column=1).value
             if cell_val is None:
@@ -128,23 +129,32 @@ def main():
                 
             res = tinh_du_lieu_cp(sym)
             
-            # KIỂM TRA CHẶT CHẼ: Chỉ xử lý nếu kết quả trả về là một list hợp lệ
-            if isinstance(res, list) and len(res) == 11:
+            # GIẢI QUYẾT TRIỆT ĐỂ LỖI: Kiểm tra định dạng đầu ra linh hoạt
+            if isinstance(res, list) and len(res) >= 3:
                 try:
-                    # Ghi dữ liệu vào các cột tương ứng trên Excel (Cột B -> L)
+                    # Ghi đầy đủ 11 chỉ số vào các cột từ B đến L (cột số 2 đến cột số 12)
                     for col_idx, val in enumerate(res, start=2):
                         sheet.cell(row=row, column=col_idx, value=val)
                     
-                    total_bd_gia += res[2]  # Biến động giá
-                    total_kltb += res[3]    # KLTB/KLTB21
+                    total_bd_gia += float(res[2])  # Vị trí số 2 tương ứng Biến động giá
+                    total_kltb += float(res[3]) if len(res) > 3 else 0.0
                     count_valid += 1
-                except Exception as write_err:
-                    print(f"Lỗi ghi mã {sym} vào sheet {sheet_name}: {write_err}")
+                except Exception as e:
+                    print(f"Lỗi ghi dữ liệu dạng mảng cho mã {sym}: {e}")
+                    
+            elif isinstance(res, (int, float)):
+                # Dự phòng: Trường hợp hàm tính toán của bạn chỉ trả về một số thực duy nhất
+                try:
+                    sheet.cell(row=row, column=4, value=res) # Điền trực tiếp vào cột D
+                    total_bd_gia += float(res)
+                    count_valid += 1
+                except Exception as e:
+                    print(f"Lỗi ghi dữ liệu dạng số cho mã {sym}: {e}")
             
-            # Thời gian nghỉ 0.15 giây tránh spam nghẽn mạng API VNDirect
+            # Thời gian nghỉ ngắn 0.15 giây để máy chủ VNDirect không chặn IP khi chạy >1000 mã
             time.sleep(0.15)
             
-        # Tính toán giá trị trung bình nếu ngành có mã hợp lệ
+        # Tính toán giá trị trung bình nếu nhóm ngành có dữ liệu hợp lệ
         if count_valid > 0:
             avg_bd = (total_bd_gia / count_valid) * 100
             avg_kl = total_kltb / count_valid
@@ -153,38 +163,39 @@ def main():
                 "Biến động TB (%)": round(avg_bd, 2),
                 "Thanh khoản TB (Lần)": round(avg_kl, 2)
             })
-            print(f"   => Hoàn thành {sheet_name}: {count_valid} mã. Biến động TB: {round(avg_bd, 2)}%")
+            print(f"   => Ngành {sheet_name} hoàn thành ({count_valid} mã). Biến động TB: {round(avg_bd, 2)}%")
 
-    # 2. Cập nhật số liệu an toàn vào sheet Dashboard
+    # 2. Cập nhật kết quả trung bình ngành vào sheet Dashboard của Excel
     if "Dashboard" in wb.sheetnames and summary_data:
         dash_sheet = wb["Dashboard"]
         
-        # Tìm vị trí ghi dữ liệu thích hợp hoặc ghi đè từ hàng 3 một cách an toàn
+        # Xóa dữ liệu cũ một cách an toàn tại bảng tổng hợp (Cột A, B, C từ dòng 3 đến 40)
         for r in range(3, 40):
             dash_sheet.cell(row=r, column=1, value=None)
             dash_sheet.cell(row=r, column=2, value=None)
             dash_sheet.cell(row=r, column=3, value=None)
             
+        # Ghi đè dữ liệu mới được tính toán
         for idx, data in enumerate(summary_data, start=3):
             dash_sheet.cell(row=idx, column=1, value=data["Nhóm Ngành"])
-            dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100)
+            dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) # Chia 100 để đúng định dạng % của Excel
             dash_sheet.cell(row=idx, column=3, value=data["Thanh khoản TB (Lần)"])
             
     try:
         wb.save(file_path)
-        print("=== ĐÃ CẬP NHẬT FILE EXCEL THÀNH CÔNG ===")
+        print("=== ĐÃ LƯU DỮ LIỆU MỚI VÀO FILE EXCEL THÀNH CÔNG ===")
     except Exception as save_err:
-        print(f"Không thể lưu file Excel (Có thể file đang mở): {save_err}")
+        print(f"Không thể lưu file Excel (Có thể tệp tin đang mở ở máy khác): {save_err}")
 
     # =====================================================================
-    # 3. SINH ĐỒ THỊ TRỰC QUAN DIỄN BIẾN CÁC NGÀNH RA FILE HTML
+    # 3. ĐỒNG BỘ ĐỒ THỊ VÀ XUẤT RA GIAO DIỆN WEB HTML (INDEX.HTML)
     # =====================================================================
     df_dash = pd.DataFrame(summary_data)
     html_charts = ""
-    html_table = "<p>Không có số liệu</p>"
+    html_table = "<p>Không có số liệu tổng hợp ngành</p>"
     
     if not df_dash.empty:
-        # Sắp xếp ngành theo thứ tự biến động giảm dần để biểu đồ đẹp mắt hơn
+        # Sắp xếp ngành từ tăng mạnh nhất tới giảm mạnh nhất để tạo đồ thị cột đẹp mắt như ảnh của bạn
         df_dash = df_dash.sort_values(by="Biến động TB (%)", ascending=False)
         
         fig_p = px.bar(df_dash, x='Nhóm Ngành', y='Biến động TB (%)', 
@@ -218,11 +229,11 @@ def main():
         <div class="container my-5">
             <div class="text-center mb-5">
                 <h2 class="fw-bold text-dark">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
-                <p class="text-muted">Đồng bộ dữ liệu thời gian thực | Cập nhật lúc: <span class="badge bg-danger">{now_str}</span></p>
+                <p class="text-muted">Đo lường >1000 mã từ Excel | Cập nhật lúc: <span class="badge bg-danger">{now_str}</span></p>
             </div>
             
             <div class="card border-primary">
-                <div class="card-header bg-primary text-white">📊 BIỂU ĐỒ DIỄN BIẾN CÁC NHÓM NGÀNH</div>
+                <div class="card-header bg-primary text-white">📊 BIỂU ĐỒ DIỄN BIẾN CÁC NHÓM NGÀNH (ĐỒNG BỘ FILE EXCEL)</div>
                 <div class="card-body">
                     {html_charts}
                 </div>
@@ -231,7 +242,7 @@ def main():
             <div class="row">
                 <div class="col-md-5">
                     <div class="card">
-                        <div class="card-header bg-dark text-white">📋 CHI TIẾT SỐ LIỆU TRUNG BÌNH</div>
+                        <div class="card-header bg-dark text-white">📋 CHI TIẾT SỐ LIỆU TRUNG BÌNH CÁC NGÀNH</div>
                         <div class="card-body table-responsive">{html_table}</div>
                     </div>
                 </div>
@@ -249,7 +260,7 @@ def main():
     
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-    print("=== ĐÃ TẠO THÀNH CÔNG GIAO DIỆN INDEX.HTML BIỂU ĐỒ NGÀNH ===")
+    print("=== ĐÃ XUẤT THÀNH CÔNG GIAO DIỆN INDEX.HTML VÀ BIỂU ĐỒ ĐỒNG BỘ ===")
 
 if __name__ == "__main__":
     main()
