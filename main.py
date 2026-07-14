@@ -7,6 +7,19 @@ import openpyxl
 import plotly.express as px
 import plotly.io as pio
 from user_agent import random_user
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+chrome_options = Options()
+chrome_options.add_argument("--headless") # Bắt buộc phải có trên GitHub Actions
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--disable-gpu")
+
+# Nếu đoạn code cũ của bạn tự nhận diện hệ điều hành và gây lỗi,
+# bạn hãy tìm đến file `chromedrive_setup.py` hoặc chỉnh sửa trực tiếp 
+# bỏ qua phần check OS nếu đang chạy trên môi trường Linux/GitHub Actions.
+driver = webdriver.Chrome(options=chrome_options)
 
 # Khởi tạo User-Agent toàn cục để tránh bị chặn
 global head
