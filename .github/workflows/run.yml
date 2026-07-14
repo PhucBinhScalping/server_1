@@ -27,7 +27,6 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        # ĐÃ BỎ DÒNG CACHE GÂY TREO MÁY ẢO Ở ĐÂY
 
     - name: Install Dependencies
       run: |
@@ -41,6 +40,11 @@ jobs:
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add index.html THONG_KE_VNINDEX_VN30.xlsm
-        git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]" || echo "Không có thay đổi gì để commit"
+        
+        # SỬ DỤNG -A ĐỂ TỰ ĐỘNG THÊM TẤT CẢ FILE THAY ĐỔI / FILE MỚI (BAO GỒM CẢ INDEX.HTML)
+        git add -A
+        
+        # BẮT BUỘC SỬ DỤNG || EXIT 0 HOẶC || ECHO ĐỂ NẾU KHÔNG CÓ THAY ĐỔI THÌ WORKFLOW VẪN BÁO XANH MƯỢT MÀ
+        git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]" || exit 0
+        
         git push
