@@ -1,6 +1,6 @@
 pandas
 requests
-user_agent
+user-agent
 html5lib
 bs4
 openpyxl
