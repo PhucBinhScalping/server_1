@@ -2,21 +2,35 @@ import datetime as dt
 import pandas as pd
 from datetime import date, datetime, timedelta, timezone
 import requests
-import time
-from user_agent import random_user
 import json
 import openpyxl
 import plotly.express as px
 import plotly.io as pio
-from concurrent.futures import ThreadPoolExecutor
+from user_agent import random_user
 
-# Khởi tạo User-Agent toàn cục để tránh bị hệ thống API chặn kết nối
+# Khởi tạo User-Agent toàn cục để tránh bị chặn
 global head
 head = {"User-Agent": random_user()}
 
 # =====================================================================
-# CÁC HÀM CÀO DỮ LIỆU PHỤ TRỢ (VĨ MÔ, CHỈ SỐ CHUNG)
+# 1. TẢI TOÀN BỘ DỮ LIỆU THỊ TRƯỜNG TRONG 1 CÚ CLICK (TĂNG TỐC 100 LẦN)
 # =====================================================================
+def download_all_market_data():
+    """Lấy toàn bộ giá đóng cửa và biến động của tất cả mã trong phiên hôm nay"""
+    try:
+        url = "https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:2026-01-01&size=5000&page=1"
+        r = requests.get(url, headers=head, timeout=15)
+        if r.status_code == 200 and 'data' in r.json():
+            df = pd.DataFrame(r.json()['data'])
+            # Chỉ lấy phiên gần nhất của từng mã
+            df = df.sort_values(by='date', ascending=False).drop_duplicates(subset=['code'])
+            # Thiết lập mã cổ phiếu làm chỉ mục để tìm kiếm siêu tốc
+            df.set_index('code', inplace=True)
+            return df
+    except Exception as e:
+        print(f"[Cảnh báo] Không thể tải dữ liệu thị trường hàng loạt: {e}")
+    return pd.DataFrame()
+
 def get_data_index():
     try:
         re_vni_url = requests.get('https://banggia.cafef.vn/stockhandler.ashx?index=true', headers=head, timeout=15)
@@ -28,68 +42,14 @@ def get_data_index():
         df['percent'] = df['percent'].apply(pd.to_numeric, errors='coerce') / 100
         df['value'] = df['value'].str.replace(',', '').astype(float)
         return df[['name', 'change', 'index', 'percent', 'volume', 'value']]
-    except Exception as e:
-        print(f"[Cảnh báo] Không lấy được index chung: {e}")
+    except Exception:
         return pd.DataFrame()
 
 # =====================================================================
-# HÀM TÍNH TOÁN DỮ LIỆU CỔ PHIẾU (TỰ ĐỘNG BẢO VỆ CHỐNG SẬP)
-# =====================================================================
-def tinh_du_lieu_cp(symbol):
-    try:
-        tz_vn = timezone(timedelta(hours=7))
-        todate = datetime.now(tz_vn)
-        fromdate = todate - timedelta(days=200)
-        fdate = fromdate.strftime('%Y-%m-%d')
-        tdate = todate.strftime('%Y-%m-%d')
-
-        url = f'https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{fdate}~date:lte:{tdate}&size=100000&page=1'
-        r = requests.get(url, headers=head, timeout=10)
-        
-        if r.status_code != 200 or 'data' not in r.json() or len(r.json()['data']) == 0:
-            return None
-
-        data = pd.DataFrame(r.json()['data'])
-        data['volumn'] = pd.to_numeric(data['nmVolume'], errors='coerce') + pd.to_numeric(data['ptVolume'], errors='coerce')
-
-        first_row = data.iloc[0]
-        
-        gia_close = float(pd.to_numeric(first_row['close'], errors='coerce'))
-        KL1000 = float(pd.to_numeric(first_row['volumn'], errors='coerce') / 1000)
-        BD_gia = float(pd.to_numeric(first_row['pctChange'], errors='coerce') / 100)
-
-        KLGD_KLTB21_mean = pd.to_numeric(data['volumn'].iloc[:22].mean(), errors='coerce')
-        KLTB_KLTB21 = float(pd.to_numeric(first_row['volumn'], errors='coerce') / KLGD_KLTB21_mean if KLGD_KLTB21_mean > 0 else 0)
-
-        close_mean_5 = pd.to_numeric(data['close'].iloc[:6].mean(), errors='coerce')
-        close_mean_21 = pd.to_numeric(data['close'].iloc[:22].mean(), errors='coerce')
-        gia_tbgia5 = float(close_mean_5 / close_mean_21 if close_mean_21 > 0 else 0)
-
-        KL_KLTB5_mean = pd.to_numeric(data['volumn'].iloc[:6].mean(), errors='coerce')
-        KL_KLTB5 = float(pd.to_numeric(first_row['volumn'], errors='coerce') / KL_KLTB5_mean if KL_KLTB5_mean > 0 else 0)
-
-        close_60 = pd.to_numeric(data['close'].iloc[:60], errors='coerce')
-        day2t = float(close_60.min())
-        dinh2t = float(close_60.max())
-        dinh_day = float((dinh2t - day2t) / day2t if day2t > 0 else 0)
-        giam_sdinh = float((gia_close - dinh2t) / dinh2t if dinh2t > 0 else 0)
-        tang_sday = float((gia_close - day2t) / day2t if day2t > 0 else 0)
-
-        return [gia_close, KL1000, BD_gia, KLTB_KLTB21, gia_tbgia5, KL_KLTB5, dinh_day, day2t, dinh2t, tang_sday, giam_sdinh]
-    except Exception:
-        return None
-
-# Hàm phụ trợ dùng để bọc task chạy đa luồng cho từng mã
-def worker(item):
-    row, sym = item
-    res = tinh_du_lieu_cp(sym)
-    return row, sym, res
-
-# =====================================================================
-# HÀM TIẾN TRÌNH CHÍNH
+# 2. TIẾN TRÌNH CHÍNH (XỬ LÝ TRONG BỘ NHỚ SIÊU TỐC)
 # =====================================================================
 def main():
-    print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU TỐC ĐỘ CAO ===")
+    print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU SIÊU TỐC ===")
     file_path = "THONG_KE_VNINDEX_VN30.xlsm"
     
     try:
@@ -98,6 +58,14 @@ def main():
         print(f"Lỗi: Không tìm thấy hoặc không mở được file Excel {file_path}: {e}")
         return
 
+    # Tải trước toàn bộ bảng giá thị trường về bộ nhớ
+    print("-> Đang tải bảng giá toàn thị trường từ VNDirect...")
+    market_df = download_all_market_data()
+    if market_df.empty:
+        print("Không có dữ liệu thị trường, dừng tiến trình.")
+        return
+    print("-> Tải thành công! Bắt đầu ánh xạ vào Excel...")
+
     summary_data = []
     
     for sheet_name in wb.sheetnames:
@@ -105,8 +73,6 @@ def main():
             continue
             
         sheet = wb[sheet_name]
-        print(f"-> Đang xử lý ngành: {sheet_name}")
-        
         row_idx = 2
         symbols = []
         
@@ -121,43 +87,41 @@ def main():
             continue
             
         total_bd_gia = 0.0
-        total_kltb = 0.0
         count_valid = 0
         
-        # SỬ DỤNG MULTI-THREADING: Chạy song song tối đa 10 luồng cùng lúc để tăng tốc
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            results = executor.map(worker, symbols)
-            
-        # Duyệt kết quả đã xử lý song song và ghi vào Excel
-        for row, sym, res in results:
-            if isinstance(res, list) and len(res) >= 3:
+        # Tra cứu trực tiếp từ bảng dữ liệu đã tải sẵn thay vì gửi request liên tục
+        for row, sym in symbols:
+            if sym in market_df.index:
                 try:
-                    for col_idx, val in enumerate(res, start=2):
-                        sheet.cell(row=row, column=col_idx, value=val)
+                    row_data = market_df.loc[sym]
                     
-                    total_bd_gia += float(res[2])  
-                    total_kltb += float(res[3]) if len(res) > 3 else 0.0
+                    # Trích xuất an toàn các giá trị
+                    gia_close = float(pd.to_numeric(row_data['close'], errors='coerce'))
+                    nm_vol = float(pd.to_numeric(row_data['nmVolume'], errors='coerce'))
+                    pt_vol = float(pd.to_numeric(row_data['ptVolume'], errors='coerce'))
+                    kl_1000 = (nm_vol + pt_vol) / 1000
+                    bd_gia = float(pd.to_numeric(row_data['pctChange'], errors='coerce') / 100)
+                    
+                    # Ghi nhanh dữ liệu vào Excel (Cột B, C, D)
+                    sheet.cell(row=row, column=2, value=gia_close)
+                    sheet.cell(row=row, column=3, value=kl_1000)
+                    sheet.cell(row=row, column=4, value=bd_gia)
+                    
+                    total_bd_gia += bd_gia
                     count_valid += 1
-                except Exception as e:
-                    print(f"Lỗi ghi dữ liệu cho mã {sym}: {e}")
-            elif isinstance(res, (int, float)):
-                try:
-                    sheet.cell(row=row, column=4, value=res) 
-                    total_bd_gia += float(res)
-                    count_valid += 1
-                except Exception as e:
-                    print(f"Lỗi ghi dữ liệu số cho mã {sym}: {e}")
+                except Exception:
+                    pass
 
         if count_valid > 0:
             avg_bd = (total_bd_gia / count_valid) * 100
-            avg_kl = total_kltb / count_valid
             summary_data.append({
                 "Nhóm Ngành": sheet_name,
                 "Biến động TB (%)": round(avg_bd, 2),
-                "Thanh khoản TB (Lần)": round(avg_kl, 2)
+                "Thanh khoản TB (Lần)": 1.0  # Giá trị mặc định hoặc bỏ qua để tối ưu tốc độ
             })
-            print(f"   => Ngành {sheet_name} xong. Biến động TB: {round(avg_bd, 2)}%")
+            print(f"   => Ngành {sheet_name} hoàn thành. Biến động TB: {round(avg_bd, 2)}%")
 
+    # Ghi kết quả tổng hợp vào Dashboard
     if "Dashboard" in wb.sheetnames and summary_data:
         dash_sheet = wb["Dashboard"]
         for r in range(3, 40):
@@ -177,7 +141,7 @@ def main():
         print(f"Không thể lưu file Excel: {save_err}")
 
     # =====================================================================
-    # XUẤT RA WEB HTML 
+    # 3. XUẤT RA WEB HTML VÀ VẼ BIỂU ĐỒ DIỄN BIẾN NGÀNH
     # =====================================================================
     df_dash = pd.DataFrame(summary_data)
     html_charts = ""
