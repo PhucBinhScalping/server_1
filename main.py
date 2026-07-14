@@ -4,7 +4,6 @@ from datetime import date, datetime, timedelta
 import requests
 import time
 from user_agent import random_user
-import RStockvn as rpv
 import json
 import openpyxl
 import plotly.express as px
@@ -129,10 +128,10 @@ def main():
                 
             res = tinh_du_lieu_cp(sym)
             
-            # GIẢI QUYẾT TRIỆT ĐỂ LỖI: Kiểm tra định dạng đầu ra linh hoạt
+            # Kiểm tra định dạng đầu ra linh hoạt
             if isinstance(res, list) and len(res) >= 3:
                 try:
-                    # Ghi đầy đủ 11 chỉ số vào các cột từ B đến L (cột số 2 đến cột số 12)
+                    # Ghi đầy đủ 11 chỉ số vào các cột từ B đến L
                     for col_idx, val in enumerate(res, start=2):
                         sheet.cell(row=row, column=col_idx, value=val)
                     
@@ -143,15 +142,14 @@ def main():
                     print(f"Lỗi ghi dữ liệu dạng mảng cho mã {sym}: {e}")
                     
             elif isinstance(res, (int, float)):
-                # Dự phòng: Trường hợp hàm tính toán của bạn chỉ trả về một số thực duy nhất
                 try:
-                    sheet.cell(row=row, column=4, value=res) # Điền trực tiếp vào cột D
+                    sheet.cell(row=row, column=4, value=res) 
                     total_bd_gia += float(res)
                     count_valid += 1
                 except Exception as e:
                     print(f"Lỗi ghi dữ liệu dạng số cho mã {sym}: {e}")
             
-            # Thời gian nghỉ ngắn 0.15 giây để máy chủ VNDirect không chặn IP khi chạy >1000 mã
+            # Thời gian nghỉ ngắn 0.15 giây để tránh bị chặn IP khi quét nhiều mã
             time.sleep(0.15)
             
         # Tính toán giá trị trung bình nếu nhóm ngành có dữ liệu hợp lệ
@@ -178,14 +176,14 @@ def main():
         # Ghi đè dữ liệu mới được tính toán
         for idx, data in enumerate(summary_data, start=3):
             dash_sheet.cell(row=idx, column=1, value=data["Nhóm Ngành"])
-            dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) # Chia 100 để đúng định dạng % của Excel
+            dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) # Định dạng %
             dash_sheet.cell(row=idx, column=3, value=data["Thanh khoản TB (Lần)"])
             
     try:
         wb.save(file_path)
         print("=== ĐÃ LƯU DỮ LIỆU MỚI VÀO FILE EXCEL THÀNH CÔNG ===")
     except Exception as save_err:
-        print(f"Không thể lưu file Excel (Có thể tệp tin đang mở ở máy khác): {save_err}")
+        print(f"Không thể lưu file Excel (Có thể tệp tin đang mở): {save_err}")
 
     # =====================================================================
     # 3. ĐỒNG BỘ ĐỒ THỊ VÀ XUẤT RA GIAO DIỆN WEB HTML (INDEX.HTML)
@@ -195,7 +193,7 @@ def main():
     html_table = "<p>Không có số liệu tổng hợp ngành</p>"
     
     if not df_dash.empty:
-        # Sắp xếp ngành từ tăng mạnh nhất tới giảm mạnh nhất để tạo đồ thị cột đẹp mắt như ảnh của bạn
+        # Sắp xếp ngành từ tăng mạnh nhất tới giảm mạnh nhất để tạo đồ thị cột đẹp mắt
         df_dash = df_dash.sort_values(by="Biến động TB (%)", ascending=False)
         
         fig_p = px.bar(df_dash, x='Nhóm Ngành', y='Biến động TB (%)', 
