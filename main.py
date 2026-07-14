@@ -8,6 +8,7 @@ import json
 import openpyxl
 import plotly.express as px
 import plotly.io as pio
+from concurrent.futures import ThreadPoolExecutor
 
 # Khởi tạo User-Agent toàn cục để tránh bị hệ thống API chặn kết nối
 global head
@@ -36,7 +37,6 @@ def get_data_index():
 # =====================================================================
 def tinh_du_lieu_cp(symbol):
     try:
-        # Lấy thời gian hiện tại theo múi giờ Việt Nam (UTC+7)
         tz_vn = timezone(timedelta(hours=7))
         todate = datetime.now(tz_vn)
         fromdate = todate - timedelta(days=200)
@@ -44,7 +44,7 @@ def tinh_du_lieu_cp(symbol):
         tdate = todate.strftime('%Y-%m-%d')
 
         url = f'https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{fdate}~date:lte:{tdate}&size=100000&page=1'
-        r = requests.get(url, headers=head, timeout=15)
+        r = requests.get(url, headers=head, timeout=10)
         
         if r.status_code != 200 or 'data' not in r.json() or len(r.json()['data']) == 0:
             return None
@@ -54,7 +54,6 @@ def tinh_du_lieu_cp(symbol):
 
         first_row = data.iloc[0]
         
-        # Ép kiểu dữ liệu về float tiêu chuẩn của Python để openpyxl không báo lỗi định dạng
         gia_close = float(pd.to_numeric(first_row['close'], errors='coerce'))
         KL1000 = float(pd.to_numeric(first_row['volumn'], errors='coerce') / 1000)
         BD_gia = float(pd.to_numeric(first_row['pctChange'], errors='coerce') / 100)
@@ -77,14 +76,20 @@ def tinh_du_lieu_cp(symbol):
         tang_sday = float((gia_close - day2t) / day2t if day2t > 0 else 0)
 
         return [gia_close, KL1000, BD_gia, KLTB_KLTB21, gia_tbgia5, KL_KLTB5, dinh_day, day2t, dinh2t, tang_sday, giam_sdinh]
-    except Exception as e:
+    except Exception:
         return None
+
+# Hàm phụ trợ dùng để bọc task chạy đa luồng cho từng mã
+def worker(item):
+    row, sym = item
+    res = tinh_du_lieu_cp(sym)
+    return row, sym, res
 
 # =====================================================================
 # HÀM TIẾN TRÌNH CHÍNH
 # =====================================================================
 def main():
-    print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU FILE EXCEL ===")
+    print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU TỐC ĐỘ CAO ===")
     file_path = "THONG_KE_VNINDEX_VN30.xlsm"
     
     try:
@@ -119,12 +124,12 @@ def main():
         total_kltb = 0.0
         count_valid = 0
         
-        for row, sym in symbols:
-            if len(sym) != 3: 
-                continue
-                
-            res = tinh_du_lieu_cp(sym)
+        # SỬ DỤNG MULTI-THREADING: Chạy song song tối đa 10 luồng cùng lúc để tăng tốc
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            results = executor.map(worker, symbols)
             
+        # Duyệt kết quả đã xử lý song song và ghi vào Excel
+        for row, sym, res in results:
             if isinstance(res, list) and len(res) >= 3:
                 try:
                     for col_idx, val in enumerate(res, start=2):
@@ -134,18 +139,15 @@ def main():
                     total_kltb += float(res[3]) if len(res) > 3 else 0.0
                     count_valid += 1
                 except Exception as e:
-                    print(f"Lỗi ghi dữ liệu dạng mảng cho mã {sym}: {e}")
-                    
+                    print(f"Lỗi ghi dữ liệu cho mã {sym}: {e}")
             elif isinstance(res, (int, float)):
                 try:
                     sheet.cell(row=row, column=4, value=res) 
                     total_bd_gia += float(res)
                     count_valid += 1
                 except Exception as e:
-                    print(f"Lỗi ghi dữ liệu dạng số cho mã {sym}: {e}")
-            
-            time.sleep(0.05)
-            
+                    print(f"Lỗi ghi dữ liệu số cho mã {sym}: {e}")
+
         if count_valid > 0:
             avg_bd = (total_bd_gia / count_valid) * 100
             avg_kl = total_kltb / count_valid
@@ -154,6 +156,7 @@ def main():
                 "Biến động TB (%)": round(avg_bd, 2),
                 "Thanh khoản TB (Lần)": round(avg_kl, 2)
             })
+            print(f"   => Ngành {sheet_name} xong. Biến động TB: {round(avg_bd, 2)}%")
 
     if "Dashboard" in wb.sheetnames and summary_data:
         dash_sheet = wb["Dashboard"]
@@ -174,7 +177,7 @@ def main():
         print(f"Không thể lưu file Excel: {save_err}")
 
     # =====================================================================
-    # XUẤT RA WEB HTML VỚI MÚI GIỜ VIỆT NAM +7 KHÔNG BỊ LỆCH
+    # XUẤT RA WEB HTML 
     # =====================================================================
     df_dash = pd.DataFrame(summary_data)
     html_charts = ""
@@ -193,7 +196,6 @@ def main():
     df_idx = get_data_index()
     html_idx = df_idx.to_html(classes='table table-bordered text-center table-info', index=False) if not df_idx.empty else ""
 
-    # LẤY THỜI GIAN HIỆN TẠI THEO MÚI GIỜ VIỆT NAM CHUẨN ĐỂ HIỂN THỊ TRÊN WEB
     tz_vn = timezone(timedelta(hours=7))
     now_str = datetime.now(tz_vn).strftime("%d/%m/%Y %H:%M:%S")
     
