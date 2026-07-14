@@ -14,21 +14,29 @@ global head
 head = {"User-Agent": random_user()}
 
 # =====================================================================
-# CÁC HÀM CÀO DỮ LIỆU GỐC CỦA BẠN (Đã sửa lỗi và bỏ xlwings)
+# CÁC HÀM CÀO DỮ LIỆU GỐC CỦA BẠN (Đã sửa lỗi chống sập hệ thống)
 # =====================================================================
 
 def dau_thau_thi_truong_mo():
     try:
         url_2 = 'https://www.sbv.gov.vn/webcenter/portal/vi/menu/trangchu/hdtttt'
         response2 = requests.get(url_2, allow_redirects=True, headers=head, timeout=15)
-        df4 = pd.read_html(response2.text)[0][9:13]
+        
+        # Bọc kiểm tra bảng để tránh ValueError
+        tables = pd.read_html(response2.text)
+        if not tables or len(tables) == 0:
+            print("Không tìm thấy bảng dữ liệu trên trang SBV.")
+            return pd.DataFrame()
+            
+        df4 = tables[0][9:13]
         df = df4.iloc[:, :4]
         df.columns = df.iloc[0]
         df = df[1:]
-        df['Lãi suất trúng thầu (%/năm)'] = (df['Lãi suất trúng thầu (%/năm)'].str.replace('%', '').astype(float)) / 100
+        if 'Lãi suất trúng thầu (%/năm)' in df.columns:
+            df['Lãi suất trúng thầu (%/năm)'] = (df['Lãi suất trúng thầu (%/năm)'].str.replace('%', '').astype(float)) / 100
         return df.set_index(df.columns[0])
     except Exception as e:
-        print(f"Lỗi hàm dau_thau_thi_truong_mo: {e}")
+        print(f"Lỗi hàm dau_thau_thi_truong_mo (Bỏ qua để chạy tiếp): {e}")
         return pd.DataFrame()
 
 def gia_vang_24money():
@@ -124,7 +132,6 @@ def get_data_index():
                 print(f"Error fetching data for {key}: {e}")
                 data_frames[key] = pd.DataFrame()
         
-        # ĐÃ SỬA LỖI ĐOẠN NÀY BẰNG CÁCH BỌC HÀM list() ĐỂ HỢP LỆ VỚI PYTHON 3
         list_data = [
             ('VNINDEX', round(list(data_frames['vni']['total_value_traded'].values)[0], 2) if not data_frames['vni'].empty else 0),
             ('VN30', round(list(data_frames['vn30']['total_value_traded'].values)[0], 2) if not data_frames['vn30'].empty else 0),
@@ -304,7 +311,7 @@ def main():
     # Chuyển đổi dữ liệu sang bảng dạng HTML đẹp mắt (Dùng Bootstrap class)
     html_index = df_index.to_html(classes='table table-bordered table-striped text-center table-info') if not df_index.empty else "<p>Không có dữ liệu</p>"
     html_pe = df_pe.to_html(classes='table table-bordered table-dark') if not df_pe.empty else "<p>Không có dữ liệu</p>"
-    html_sbv = df_sbv.to_html(classes='table table-bordered text-center table-success') if not df_sbv.empty else "<p>Không có dữ liệu</p>"
+    html_sbv = df_sbv.to_html(classes='table table-bordered text-center table-success') if not df_sbv.empty else "<p class='text-muted'>Hiện tại trang SBV chặn cào tự động trực tiếp.</p>"
     html_vang = df_vang.to_html(classes='table table-striped table-hover table-warning') if not df_vang.empty else "<p>Không có dữ liệu</p>"
     html_world = df_world.to_html(classes='table table-striped table-secondary') if not df_world.empty else "<p>Không có dữ liệu</p>"
     html_cp_analysis = df_cp_analysis.to_html(classes='table table-striped text-center table-light', index=False) if not df_cp_analysis.empty else "<p>Không có dữ liệu</p>"
