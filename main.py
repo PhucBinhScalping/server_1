@@ -25,15 +25,18 @@ def download_all_market_history():
         fromdate = todate - timedelta(days=90)
         fdate = fromdate.strftime('%Y-%m-%d')
 
-        print(f"-> Đang tải dữ liệu lịch sử thị trường từ API từ ngày: {fdate}...")
+        print(f"[LOG] 1. Bắt đầu tải dữ liệu lịch sử từ API từ ngày: {fdate}...")
         url = f"https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:{fdate}&size=50000&page=1"
         r = requests.get(url, headers=head, timeout=20)
         
+        print(f"[LOG] Kết quả phản hồi từ API VNDIRECT: Status Code = {r.status_code}")
         if r.status_code == 200 and 'data' in r.json():
             df = pd.DataFrame(r.json()['data'])
             if df.empty:
+                print("[LOG] CẢNH BÁO: Dữ liệu trả về từ API trống rỗng!")
                 return pd.DataFrame()
                 
+            print(f"[LOG] Tải thành công. Số lượng dòng dữ liệu thô: {len(df)}")
             df.rename(columns={
                 'code': 'symbol', 'nmVolume': 'klgd_khop_lenh', 'nmValue': 'gtgd_khop_lenh',
                 'ptVolume': 'klgd_thoa_thuan', 'ptValue': 'gtgd_thoa_thuan',
@@ -49,9 +52,12 @@ def download_all_market_history():
                 df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
                 
             df = df.sort_values(by=['symbol', 'date'], ascending=[True, True])
+            print(f"[LOG] Hoàn tất chuẩn hóa dữ liệu lịch sử thị trường. Số lượng mã độc nhất: {df['symbol'].nunique()}")
             return df
+        else:
+            print(f"[LOG] LỖI API: Dữ liệu không tồn tại hoặc định dạng phản hồi sai. Nội dung: {r.text[:200]}")
     except Exception as e:
-        print(f"[Lỗi] Không thể tải dữ liệu thị trường từ API: {e}")
+        print(f"[LOG LỖI CHƯƠNG TRÌNH] Không thể tải dữ liệu thị trường từ API: {e}")
     return pd.DataFrame()
 
 def tinh_du_lieu_cp_from_ram(symbol, market_df):
@@ -85,6 +91,7 @@ def tinh_du_lieu_cp_from_ram(symbol, market_df):
 
 def get_data_index():
     try:
+        print("[LOG] 3. Đang lấy dữ liệu chỉ số Index từ CaféF...")
         re_vni_url = requests.get('https://banggia.cafef.vn/stockhandler.ashx?index=true', headers=head, timeout=10)
         results_vni = json.loads(re_vni_url.text)
         results_vni[0]['name'] = 'HNX'
@@ -93,47 +100,56 @@ def get_data_index():
         df['change'] = df['change'].apply(pd.to_numeric, errors='coerce')
         df['percent'] = df['percent'].apply(pd.to_numeric, errors='coerce') / 100
         df['value'] = df['value'].str.replace(',', '').astype(float)
+        print("[LOG] Lấy dữ liệu Market Index thành công!")
         return df[['name', 'change', 'index', 'percent', 'volume', 'value']]
-    except Exception:
+    except Exception as e:
+        print(f"[LOG KHÔNG BẮT BUỘC] Lỗi lấy thông tin Index phụ trợ từ CaféF (Vẫn tiếp tục chạy biểu đồ chính): {e}")
         return pd.DataFrame()
 
 def main():
-    print("=== HỆ THỐNG PHÂN TÍCH DIỄN BIẾN NGÀNH SONG TRỤC ===")
+    print("=== BẮT ĐẦU CHẠY HỆ THỐNG KIỂM TRA LOG ===")
     
-    # Kiểm tra sự tồn tại của file cấu hình mới tại thư mục gốc
+    # Kiểm tra xem file excel mới tải lên đã nằm đúng thư mục gốc chưa
     if not os.path.exists(FILE_DANH_SACH):
-        print(f"LỖI KHẨN CẤP: Không tìm thấy file danh sách cổ phiếu mới '{FILE_DANH_SACH}' tại thư mục gốc repo!")
+        print(f"[LOG LỖI KHẨN CẤP] Không tìm thấy file '{FILE_DANH_SACH}' tại thư mục gốc!")
+        print(f"[LOG DANH SÁCH FILE THỰC TẾ TRÊN REPO]: {os.listdir('.')}")
         return
+
+    print(f"[LOG] Đã tìm thấy file nguồn '{FILE_DANH_SACH}'.")
 
     market_df = download_all_market_history()
     if market_df.empty:
-        print("[Lỗi] Không lấy được dữ liệu lịch sử từ API.")
+        print("[LOG LỖI] File kết quả từ API trống, không có căn cứ tính toán.")
         return
 
-    print(f"-> Đang tiến hành đọc dữ liệu từ file mới: {FILE_DANH_SACH}")
-    # Đọc dữ liệu từ Sheet1 hoặc sheet đầu tiên của file excel mới
-    df_company = pd.read_excel(FILE_DANH_SACH)
-    df_company.columns = df_company.columns.str.strip()
+    print(f"[LOG] 2. Bắt đầu mở và xử lý file Excel: {FILE_DANH_SACH}")
+    try:
+        df_company = pd.read_excel(FILE_DANH_SACH)
+        df_company.columns = df_company.columns.str.strip()
+        print(f"[LOG] Đọc thành công file Excel. Danh sách tên các cột tìm thấy: {list(df_company.columns)}")
+    except Exception as e:
+        print(f"[LOG LỖI ĐỌC EXCEL] Không thể đọc nội dung file Excel. Lỗi thư viện hoặc định dạng: {e}")
+        return
     
-    # Xác định các cột tương ứng với cấu hình file mới (Ticker và Ngành)
     col_ticker = 'Ticker' if 'Ticker' in df_company.columns else df_company.columns[0]
     col_nganh = 'Ngành' if 'Ngành' in df_company.columns else df_company.columns[6]
 
-    print(f"-> Đang ánh xạ dữ liệu theo cột Mã cổ phiếu [{col_ticker}] và cột Tên ngành [{col_nganh}]")
+    print(f"[LOG] Cột mã cổ phiếu sử dụng: '{col_ticker}' | Cột Tên ngành sử dụng: '{col_nganh}'")
 
     df_company[col_ticker] = df_company[col_ticker].astype(str).str.strip().str.upper()
     df_company[col_nganh] = df_company[col_nganh].astype(str).str.strip()
 
     nhom_nganh_dict = {"VINGROUP": []}
+    count_valid_rows = 0
 
     for index, row in df_company.iterrows():
         ma = row[col_ticker]
         nganh_goc = row[col_nganh]
         
-        # Bỏ qua dòng trống hoặc mã không đúng độ dài tiêu chuẩn
         if nganh_goc == 'nan' or not ma or len(ma) != 3:
             continue
             
+        count_valid_rows += 1
         if ma in MA_VINGROUP:
             if ma not in nhom_nganh_dict["VINGROUP"]:
                 nhom_nganh_dict["VINGROUP"].append(ma)
@@ -142,6 +158,9 @@ def main():
                 nhom_nganh_dict[nganh_goc] = []
             if ma not in nhom_nganh_dict[nganh_goc]:
                 nhom_nganh_dict[nganh_goc].append(ma)
+
+    print(f"[LOG] Tổng số mã cổ phiếu hợp lệ được lọc ra từ file excel: {count_valid_rows}")
+    print(f"[LOG] Tổng số nhóm ngành phân tách được: {len(nhom_nganh_dict)}")
 
     danh_sach_kq_nganh = []
     for nganh, list_ticker in nhom_nganh_dict.items():
@@ -163,7 +182,7 @@ def main():
         danh_sach_kq_nganh.append(df_nganh_final)
 
     if not danh_sach_kq_nganh:
-        print("Lỗi: Không tính toán được chỉ số trung bình cho bất kỳ ngành nào từ file mới.")
+        print("[LOG LỖI RẤT LỚN] Không tính toán được dữ liệu trung bình cho bất kỳ ngành nào. Hãy kiểm tra lại xem danh sách Ticker trong file excel có khớp mã với sàn giao dịch hay không.")
         return
 
     df_tong_hop_nganh = pd.concat(danh_sach_kq_nganh, ignore_index=True)
@@ -175,7 +194,7 @@ def main():
     df_dash['percent_change'] = df_dash['percent_change'] * 100
     df_dash = df_dash.sort_values(by="percent_change", ascending=False)
 
-    # Biểu đồ diễn biến ngành chuẩn giao diện tối (Dark Theme)
+    print(f"[LOG] Bắt đầu vẽ đồ thị biểu đồ Plotly cho {len(df_dash)} ngành...")
     fig = io_go.Figure()
     colors_bar = ['#198754' if x >= 0 else '#dc3545' for x in df_dash['percent_change']]
     
@@ -249,9 +268,11 @@ def main():
     </body>
     </html>
     """
+    
+    print("[LOG] Đang ghi file dữ liệu ra index.html...")
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-    print("=== ĐÃ TẠO FILE INDEX.HTML MỚI THÀNH CÔNG ===")
+    print("=== HOÀN TẤT: FILE INDEX.HTML ĐÃ ĐƯỢC TẠO THÀNH CÔNG ===")
 
 if __name__ == "__main__":
     main()
