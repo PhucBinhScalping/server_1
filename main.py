@@ -12,7 +12,7 @@ from user_agent import random_user
 global head
 head = {"User-Agent": random_user()}
 
-url_danh_sach_cty = "danh_sach_cong_ty.xlsx"
+url_danh_sach_cty = "data/danh_sach_cong_ty.xlsx"
 
 # =====================================================================
 # 1. TẢI TOÀN BỘ DỮ LIỆU LỊCH SỬ 60 PHIÊN CỦA TOÀN THỊ TRƯỜNG (SIÊU TỐC)
