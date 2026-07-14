@@ -3,14 +3,50 @@
     <html lang="vi">
     <head>
         <meta charset="UTF-8">
-        <title>Hệ Thống Phân Tích Diễn Biến Ngành</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Debug Hệ Thống Ngành</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+        <style>
+            body { background-color: #121416; color: #ffffff; padding: 20px; }
+            .card { background-color: #212529; border: 1px solid #343a40; margin-bottom: 20px; }
+            .card-header { background-color: #2b3035; color: #fff; font-weight: bold; }
+            pre { background-color: #1a1d20; color: #ffc107; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        </style>
     </head>
-    <body style="background-color: #121416; color: #ffffff; padding: 50px;">
-        <div class="container text-center card p-5 bg-dark border-secondary">
-            <h2 class="text-warning fw-bold mb-4">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH</h2>
-            <div class="alert alert-info">Hệ thống đang chờ API VNDIRECT khởi tạo và cấp dữ liệu cho phiên giao dịch tiếp theo.</div>
-            <p class="text-secondary">Cập nhật lần cuối: 15/07/2026 00:30:04</p>
+    <body>
+        <div class="container-fluid">
+            <h2 class="text-center text-warning fw-bold mb-4">TRANG GHI LOG VÀ KIỂM TRA BẢNG TÍNH NGÀNH</h2>
+            <p class="text-center text-secondary">Cập nhật lúc: 15/07/2026 00:33:58</p>
+
+            <div class="card">
+                <div class="card-header text-info">📑 LOG TIẾN TRÌNH CHẠY (DEBUG LOGS)</div>
+                <div class="card-body">
+                    <div style="font-family: monospace; font-size: 14px; line-height: 1.6; max-height: 300px; overflow-y: auto; background: #1a1d20; padding: 15px; border-radius: 5px;">
+                        [17:33:58] === KHỞI CHẠY TIẾN TRÌNH DEBUG LỖI ===<br>[17:33:58] Đã phát hiện file excel cấu hình: 'danh_sach_cong_ty.xlsx'<br>[17:33:58] Bắt đầu tải dữ liệu lịch sử từ API (150 ngày gần nhất, từ ngày: 2026-02-15)...<br>[17:34:28] LỖI KHI GỌI API: HTTPSConnectionPool(host='finfo-api.vndirect.com.vn', port=443): Max retries exceeded with url: /v4/stock_prices?sort=date&q=date:gte:2026-02-15&size=100000&page=1 (Caused by ConnectTimeoutError(<HTTPSConnection(host='finfo-api.vndirect.com.vn', port=443) at 0x7f7bbde0b1f0>, 'Connection to finfo-api.vndirect.com.vn timed out. (connect timeout=30)'))<br>[17:34:28] HỆ THỐNG GẶP LỖI NẶNG: Không thể chạy tính toán vì dữ liệu tải về từ API lịch sử bị rỗng hoặc lỗi kết nối.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-danger">
+                <div class="card-header text-danger">⚠️ CHI TIẾT LỖI HỆ THỐNG (TRACEBACK ERROR)</div>
+                <div class="card-body">
+                    <pre>Traceback (most recent call last):
+  File "/home/runner/work/may_ao/may_ao/main.py", line 120, in main
+    raise ValueError("Không thể chạy tính toán vì dữ liệu tải về từ API lịch sử bị rỗng hoặc lỗi kết nối.")
+ValueError: Không thể chạy tính toán vì dữ liệu tải về từ API lịch sử bị rỗng hoặc lỗi kết nối.
+</pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header text-success">📊 BIỂU ĐỒ SONG TRỤC DIỄN BIẾN NGÀNH</div>
+                <div class="card-body p-1"><p class='text-danger'>Chưa có biểu đồ.</p></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header text-warning">📋 BẢNG KẾT QUẢ TÍNH TOÁN TRUNG BÌNH CÁC NGÀNH</div>
+                <div class="card-body table-responsive"><p class='text-danger'>Chưa tính toán được bảng dữ liệu.</p></div>
+            </div>
         </div>
     </body>
     </html>
