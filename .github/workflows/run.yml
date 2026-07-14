@@ -31,6 +31,7 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
+        # Cài đặt các thư viện cần thiết (Thêm openpyxl để Python đọc được file danh_sach_cong_ty.xlsx)
         pip install openpyxl plotly pandas requests user_agent
 
     - name: Execute Python Script
@@ -41,10 +42,10 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-        # SỬ DỤNG -A ĐỂ TỰ ĐỘNG THÊM TẤT CẢ FILE THAY ĐỔI / FILE MỚI (BAO GỒM CẢ INDEX.HTML)
-        git add -A
+        # Chỉ add duy nhất file giao diện html, repo sẽ siêu nhẹ và mượt mà
+        git add index.html
         
-        # BẮT BUỘC SỬ DỤNG || EXIT 0 HOẶC || ECHO ĐỂ NẾU KHÔNG CÓ THAY ĐỔI THÌ WORKFLOW VẪN BÁO XANH MƯỢT MÀ
+        # Nếu không có thay đổi gì (ví dụ cuối tuần API trả về data trùng) thì bỏ qua an toàn
         git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]" || exit 0
         
         git push
