@@ -4,13 +4,9 @@ on:
   push:
     branches: [ main ]
   schedule:
-    # 1. Chạy mỗi 15 phút, từ phút 15 đến phút 59 của giờ thứ 2 UTC (tức 9h15 - 9h59 sáng giờ VN)
     - cron: '*/15 2 * * 1-5'
-    # 2. Chạy mỗi 15 phút, từ giờ thứ 3 đến giờ thứ 7 UTC (tức 10h00 - 14h59 chiều giờ VN)
     - cron: '*/15 3-7 * * 1-5'
-    # 3. Chạy đúng vào lúc 8h00 UTC (tức chốt kết quả cuối cùng lúc 15h00 chiều giờ VN)
     - cron: '0 8 * * 1-5'
-    
   workflow_dispatch:
 
 permissions:
@@ -31,7 +27,6 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        # Cài đặt các thư viện cần thiết (Thêm openpyxl để Python đọc được file danh_sach_cong_ty.xlsx)
         pip install openpyxl plotly pandas requests user_agent
 
     - name: Execute Python Script
@@ -42,10 +37,12 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-        # Chỉ add duy nhất file giao diện html, repo sẽ siêu nhẹ và mượt mà
-        git add index.html
-        
-        # Nếu không có thay đổi gì (ví dụ cuối tuần API trả về data trùng) thì bỏ qua an toàn
-        git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]" || exit 0
-        
-        git push
+        # Chỉ thực hiện commit nếu file index.html thực sự tồn tại và có thay đổi mới
+        if [ -f "index.html" ]; then
+          git add index.html
+          git commit -m "Cập nhật biểu đồ biến động giá và thanh khoản tự động [skip ci]" || exit 0
+          git push
+        else
+          echo "Cảnh báo: Không tìm thấy file index.html được tạo ra từ script Python."
+          exit 1
+        fi
