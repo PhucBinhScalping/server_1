@@ -12,59 +12,25 @@ from user_agent import random_user
 global head
 head = {"User-Agent": random_user()}
 
+# ĐƯỜNG DẪN ĐẾN FILE DANH SÁCH CÔNG TY TRONG THƯ MỤC DATA CỦA BẠN
+# (Bạn có thể đổi thành "data/ds_nganh_da_loc.xlsx" nếu muốn dùng file kia)
+url_danh_sach_cty = "data/danh_sach_cong_ty.xlsx"
+
 # Danh sách các mã thuộc nhóm Vingroup
 MA_VINGROUP = ["VIC", "VRE", "VHM", "VPL"]
 
 # =====================================================================
-# 1. TỰ ĐỘNG TẢI DANH SÁCH NGÀNH VÀ CỔ PHIẾU TỪ API (THAY THẾ EXCEL)
-# =====================================================================
-def get_industry_and_tickers():
-    """Tự động tải danh sách nhóm ngành cấp 2 và các mã cổ phiếu từ API"""
-    try:
-        print("-> Đang tự động tải danh sách cổ phiếu và nhóm ngành từ API...")
-        # Sử dụng API nội bộ của VNDIRECT để lấy danh sách hồ sơ doanh nghiệp gồm ngành cấp 2 công ty niêm yết
-        url = "https://finfo-api.vndirect.com.vn/v4/industry_classification?size=2000"
-        r = requests.get(url, headers=head, timeout=15)
-        
-        nhom_nganh_dict = {"VINGROUP": []}
-        
-        if r.status_code == 200 and 'data' in r.json():
-            for item in r.json()['data']:
-                # Lấy mã cổ phiếu và tên ngành cấp 2 (ví dụ: Bất động sản, Ngân hàng...)
-                ma = item.get('code', '').strip().upper()
-                nganh_goc = item.get('industryLevel2GroupName', '').strip()
-                
-                if not ma or not nganh_goc or len(ma) != 3: # Chỉ lấy các mã cổ phiếu thường 3 ký tự
-                    continue
-                
-                # Phân tách logic nhóm Vingroup
-                if ma in MA_VINGROUP:
-                    if ma not in nhom_nganh_dict["VINGROUP"]:
-                        nhom_nganh_dict["VINGROUP"].append(ma)
-                else:
-                    if nganh_goc not in nhom_nganh_dict:
-                        nhom_nganh_dict[nganh_goc] = []
-                    if ma not in nhom_nganh_dict[nganh_goc]:
-                        nhom_nganh_dict[nganh_goc].append(ma)
-                        
-            return nhom_nganh_dict
-    except Exception as e:
-        print(f"[Cảnh báo] Lỗi tự động tải danh sách ngành: {e}. Chuyển sang danh mục dự phòng...")
-    
-    # Danh mục dự phòng cơ bản nếu API ngành bị lỗi
-    return {"VINGROUP": ["VIC", "VHM", "VRE"], "Ngân hàng": ["VCB", "BID", "CTG", "TCB", "MBB"], "Bất động sản": ["DXG", "DIG", "PDR", "NLG"]}
-
-# =====================================================================
-# 2. TẢI TOÀN BỘ DỮ LIỆU LỊCH SỬ 60 PHIÊN CỦA TOÀN THỊ TRƯỜNG
+# 1. TẢI TOÀN BỘ DỮ LIỆU LỊCH SỬ 60 PHIÊN CỦA TOÀN THỊ TRƯỜNG TỪ API
 # =====================================================================
 def download_all_market_history():
+    """Tải dữ liệu của tất cả các mã trong khoảng 90 ngày để lọc đủ 60 phiên giao dịch thực tế"""
     try:
         tz_vn = timezone(timedelta(hours=7))
         todate = datetime.now(tz_vn)
         fromdate = todate - timedelta(days=90)
         fdate = fromdate.strftime('%Y-%m-%d')
 
-        print(f"-> Đang tải dữ liệu lịch sử thị trường từ ngày: {fdate}...")
+        print(f"-> Đang tải dữ liệu lịch sử thị trường từ API từ ngày: {fdate}...")
         url = f"https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:{fdate}&size=50000&page=1"
         r = requests.get(url, headers=head, timeout=20)
         
@@ -90,11 +56,11 @@ def download_all_market_history():
             df = df.sort_values(by=['symbol', 'date'], ascending=[True, True])
             return df
     except Exception as e:
-        print(f"[Lỗi] Không thể tải dữ liệu lịch sử thị trường: {e}")
+        print(f"[Lỗi] Không thể tải dữ liệu thị trường từ API: {e}")
     return pd.DataFrame()
 
 # =====================================================================
-# 3. HÀM TÍNH TOÁN DỮ LIỆU CỦA CỔ PHIẾU TRÊN RAM
+# 2. HÀM TÍNH TOÁN DỮ LIỆU CỦA 1 CỔ PHIẾU TRÊN BỘ NHỚ RAM
 # =====================================================================
 def tinh_du_lieu_cp_from_ram(symbol, market_df):
     try:
@@ -149,18 +115,49 @@ def get_data_index():
         return pd.DataFrame()
 
 # =====================================================================
-# 4. HÀM ĐIỀU PHỐI CHÍNH VÀ XUẤT WEBSITE BIỂU ĐỒ SONG TRỤC NỀN TỐI
+# 3. HÀM ĐIỀU PHỐI CHÍNH VÀ VẼ BIỂU ĐỒ SONG TRỤC NỀN TỐI
 # =====================================================================
 def main():
-    print("=== HỆ THỐNG PHÂN TÍCH DIỄN BIẾN NGÀNH SONG TRỤC TỰ ĐỘNG ===")
+    print("=== HỆ THỐNG PHÂN TÍCH DIỄN BIẾN NGÀNH SONG TRỤC ===")
     
-    # Gọi hàm tự động lấy danh sách ngành từ API
-    nhom_nganh_dict = get_industry_and_tickers()
-    
+    if not os.path.exists(url_danh_sach_cty):
+        print(f"Lỗi: Không tìm thấy file danh sách tại: {url_danh_sach_cty}")
+        return
+
     market_df = download_all_market_history()
     if market_df.empty:
-        print("[Lỗi] Không có dữ liệu lịch sử thị trường đầu vào.")
+        print("[Lỗi] Không lấy được dữ liệu lịch sử từ API.")
         return
+
+    # Đọc danh sách công ty từ Excel
+    df_company = pd.read_excel(url_danh_sach_cty)
+    df_company.columns = df_company.columns.str.strip()
+    
+    # Nhận diện cột tự động linh hoạt
+    col_nganh = 'Ngành Cấp 2' if 'Ngành Cấp 2' in df_company.columns else ('Ngành' if 'Ngành' in df_company.columns else df_company.columns[1])
+    col_ticker = 'Ticker' if 'Ticker' in df_company.columns else ('Mã' if 'Mã' in df_company.columns else df_company.columns[0])
+
+    df_company[col_ticker] = df_company[col_ticker].astype(str).str.strip().str.upper()
+    df_company[col_nganh] = df_company[col_nganh].astype(str).str.strip()
+
+    nhom_nganh_dict = {"VINGROUP": []}
+
+    # Phân loại mã từ Excel vào các nhóm tương ứng
+    for index, row in df_company.iterrows():
+        ma = row[col_ticker]
+        nganh_goc = row[col_nganh]
+        
+        if nganh_goc == 'nan' or not ma or len(ma) != 3:
+            continue
+            
+        if ma in MA_VINGROUP:
+            if ma not in nhom_nganh_dict["VINGROUP"]:
+                nhom_nganh_dict["VINGROUP"].append(ma)
+        else:
+            if nganh_goc not in nhom_nganh_dict:
+                nhom_nganh_dict[nganh_goc] = []
+            if ma not in nhom_nganh_dict[nganh_goc]:
+                nhom_nganh_dict[nganh_goc].append(ma)
 
     danh_sach_kq_nganh = []
 
@@ -189,10 +186,10 @@ def main():
         df_nganh_final = result_series.to_frame().T
         df_nganh_final.insert(0, 'Ngành', nganh)
         danh_sach_kq_nganh.append(df_nganh_final)
-        print(f" -> Xử lý ngành thành công: {nganh} ({len(list_ds_tb)} mã)")
+        print(f" -> Xử lý ngành: {nganh} ({len(list_ds_tb)} mã thực tế đạt chuẩn)")
 
     if not danh_sach_kq_nganh:
-        print("Không thể trích xuất số liệu ngành.")
+        print("Không có dữ liệu ngành nào được tính toán thành công.")
         return
 
     df_tong_hop_nganh = pd.concat(danh_sach_kq_nganh, ignore_index=True)
@@ -200,25 +197,23 @@ def main():
     
     tz_vn = timezone(timedelta(hours=7))
     now_dt = datetime.now(tz_vn)
-    df_tong_hop_nganh['updated_at'] = now_dt.strftime("%Y-%m-%d %H:%M:%S")
-
     df_dash = df_tong_hop_nganh.copy()
     df_dash['percent_change'] = df_dash['percent_change'] * 100
     df_dash = df_dash.sort_values(by="percent_change", ascending=False)
 
-    # Khởi tạo Graph Objects cho Biểu đồ Song trục Y
+    # Khởi tạo biểu đồ song trục Y chuyên nghiệp
     fig = io_go.Figure()
 
-    # 1. Trục Y1 bên trái: Cột (Bar Chart) biến động giá %
+    # Trục Y1 (Trái): Cột biến động giá % (Xanh/Đỏ)
     colors_bar = ['#198754' if x >= 0 else '#dc3545' for x in df_dash['percent_change']]
     fig.add_trace(io_go.Bar(
-        x=df_dash['name'],  y=df_dash['percent_change'],
-        name='Biến động giá (%)',  marker_color=colors_bar,
+        x=df_dash['name'], y=df_dash['percent_change'],
+        name='Biến động giá (%)', marker_color=colors_bar,
         text=df_dash['percent_change'].apply(lambda x: f"{x:.2f}%"),
         textposition='auto', yaxis='y1'
     ))
 
-    # 2. Trục Y2 bên phải: Đường (Line Chart) xu hướng thanh khoản
+    # Trục Y2 (Phải): Đường thanh khoản màu vàng rực nổi bật
     fig.add_trace(io_go.Scatter(
         x=df_dash['name'], y=df_dash['volume_ratio'],
         name='KL/TBKL21 (Lần)', mode='lines+markers',
@@ -226,7 +221,7 @@ def main():
         marker=dict(size=8, color='#d63384'), yaxis='y2'
     ))
 
-    # Định dạng nền tối chuẩn TradingView chuyên nghiệp
+    # Cấu hình giao diện Dark Mode chuẩn TradingView
     fig.update_layout(
         title=dict(text=f"Biểu đồ biến động giá và thanh khoản các ngành ({now_dt.strftime('%d-%m-%Y')})", x=0.5, font=dict(size=16, color="#ffffff")),
         paper_bgcolor='#212529', plot_bgcolor='#2b3035',
@@ -244,7 +239,7 @@ def main():
     html_table = df_table_show.to_html(classes='table table-dark table-hover table-striped table-bordered text-center', index=False, float_format=lambda x: f"{x:.2f}")
 
     df_idx = get_data_index()
-    html_idx = df_idx.to_html(classes='table table-dark table-bordered text-center table-striped', index=False) if not df_idx.empty else "<p>Không có dữ liệu</p>"
+    html_idx = df_idx.to_html(classes='table table-dark table-bordered text-center table-striped', index=False) if not df_idx.empty else "<p>Không có dữ liệu chỉ số</p>"
 
     full_html = f"""
     <!DOCTYPE html>
@@ -266,12 +261,10 @@ def main():
                 <h2 class="fw-bold text-uppercase text-warning">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
                 <p class="text-secondary">Cập nhật phiên mới nhất: <span class="badge bg-danger">{now_dt.strftime('%d/%m/%Y %H:%M:%S')}</span></p>
             </div>
-            
             <div class="card mb-4">
                 <div class="card-header fw-bold text-center text-info">📊 BIỂU ĐỒ DIỄN BIẾN GIÁ & THANH KHOẢN KHỐI LƯỢNG SONG TRỤC</div>
                 <div class="card-body p-1" style="min-height: 550px;">{html_charts}</div>
             </div>
-            
             <div class="row">
                 <div class="col-xl-5 col-lg-12 mb-4">
                     <div class="card h-100">
@@ -292,7 +285,7 @@ def main():
     """
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-    print("=== HOÀN THÀNH: FILE WEB MỚI VÀ BIỂU ĐỒ ĐÃ ĐƯỢC TẠO THÀNH CÔNG TỪ API ===")
+    print("=== HOÀN THÀNH: BIỂU ĐỒ SONG TRỤC ĐÃ ĐƯỢC TẠO XONG ===")
 
 if __name__ == "__main__":
     main()
