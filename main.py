@@ -22,7 +22,8 @@ def download_all_market_history():
     try:
         tz_vn = timezone(timedelta(hours=7))
         todate = datetime.now(tz_vn)
-        fromdate = todate - timedelta(days=90)
+        # NỚI RỘNG THỜI GIAN: Lấy lùi hẳn 120 ngày để luôn đảm bảo có dữ liệu giao dịch
+        fromdate = todate - timedelta(days=120)
         fdate = fromdate.strftime('%Y-%m-%d')
 
         print(f"[LOG] 1. Bắt đầu tải dữ liệu lịch sử từ API từ ngày: {fdate}...")
@@ -33,7 +34,7 @@ def download_all_market_history():
         if r.status_code == 200 and 'data' in r.json():
             df = pd.DataFrame(r.json()['data'])
             if df.empty:
-                print("[LOG] CẢNH BÁO: Dữ liệu trả về từ API trống rỗng!")
+                print("[LOG CẢNH BÁO] Dữ liệu trả về từ API trống rỗng!")
                 return pd.DataFrame()
                 
             print(f"[LOG] Tải thành công. Số lượng dòng dữ liệu thô: {len(df)}")
@@ -52,10 +53,10 @@ def download_all_market_history():
                 df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
                 
             df = df.sort_values(by=['symbol', 'date'], ascending=[True, True])
-            print(f"[LOG] Hoàn tất chuẩn hóa dữ liệu lịch sử thị trường. Số lượng mã độc nhất: {df['symbol'].nunique()}")
+            print(f"[LOG] Hoàn tất chuẩn hóa dữ liệu. Số lượng mã độc nhất: {df['symbol'].nunique()}")
             return df
         else:
-            print(f"[LOG] LỖI API: Dữ liệu không tồn tại hoặc định dạng phản hồi sai. Nội dung: {r.text[:200]}")
+            print(f"[LOG] LỖI API: Dữ liệu không định dạng được. Nội dung: {r.text[:200]}")
     except Exception as e:
         print(f"[LOG LỖI CHƯƠNG TRÌNH] Không thể tải dữ liệu thị trường từ API: {e}")
     return pd.DataFrame()
@@ -103,53 +104,69 @@ def get_data_index():
         print("[LOG] Lấy dữ liệu Market Index thành công!")
         return df[['name', 'change', 'index', 'percent', 'volume', 'value']]
     except Exception as e:
-        print(f"[LOG KHÔNG BẮT BUỘC] Lỗi lấy thông tin Index phụ trợ từ CaféF (Vẫn tiếp tục chạy biểu đồ chính): {e}")
+        print(f"[LOG CẢNH BÁO INDICES] Không lấy được thông tin Index từ CaféF: {e}")
         return pd.DataFrame()
 
+def tao_html_trong(now_dt, tin_nhan="Hệ thống đang chờ dữ liệu cập nhật từ phiên giao dịch mới..."):
+    """Hàm tạo file HTML dự phòng khi API lỗi để tránh làm hỏng luồng chạy Actions"""
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <title>Dashboard Biến Động Ngành - Trạng thái chờ</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    </head>
+    <body style="background-color: #121416; color: #ffffff; padding: 50px;">
+        <div class="container text-center card p-5 bg-dark">
+            <h2 class="text-warning fw-bold mb-4">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
+            <div class="alert alert-info">{tin_nhan}</div>
+            <p class="text-secondary">Thời gian kiểm tra hệ thống gần nhất: {now_dt.strftime('%d/%m/%Y %H:%M:%S')}</p>
+        </div>
+    </body>
+    </html>
+    """
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+    print("[LOG FALLBACK] Đã tạo file index.html dự phòng an toàn.")
+
 def main():
-    print("=== BẮT ĐẦU CHẠY HỆ THỐNG KIỂM TRA LOG ===")
+    print("=== BẮT ĐẦU CHẠY HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH ===")
+    tz_vn = timezone(timedelta(hours=7))
+    now_dt = datetime.now(tz_vn)
     
-    # Kiểm tra xem file excel mới tải lên đã nằm đúng thư mục gốc chưa
     if not os.path.exists(FILE_DANH_SACH):
         print(f"[LOG LỖI KHẨN CẤP] Không tìm thấy file '{FILE_DANH_SACH}' tại thư mục gốc!")
-        print(f"[LOG DANH SÁCH FILE THỰC TẾ TRÊN REPO]: {os.listdir('.')}")
+        tao_html_trong(now_dt, f"Lỗi cấu hình: Thiếu file cấu trúc nguồn {FILE_DANH_SACH} trên repository.")
         return
-
-    print(f"[LOG] Đã tìm thấy file nguồn '{FILE_DANH_SACH}'.")
 
     market_df = download_all_market_history()
     if market_df.empty:
-        print("[LOG LỖI] File kết quả từ API trống, không có căn cứ tính toán.")
+        print("[LOG LỖI AXIS] API lịch sử trả về trống.")
+        tao_html_trong(now_dt, "Hiện tại API nguồn chưa cung cấp dữ liệu phiên mới hoặc đang trong kỳ nghỉ lễ. Hệ thống sẽ tự động cập nhật lại vào phiên giao dịch kế tiếp.")
         return
 
-    print(f"[LOG] 2. Bắt đầu mở và xử lý file Excel: {FILE_DANH_SACH}")
+    print(f"[LOG] 2. Bắt đầu xử lý file Excel: {FILE_DANH_SACH}")
     try:
         df_company = pd.read_excel(FILE_DANH_SACH)
         df_company.columns = df_company.columns.str.strip()
-        print(f"[LOG] Đọc thành công file Excel. Danh sách tên các cột tìm thấy: {list(df_company.columns)}")
     except Exception as e:
-        print(f"[LOG LỖI ĐỌC EXCEL] Không thể đọc nội dung file Excel. Lỗi thư viện hoặc định dạng: {e}")
+        print(f"[LOG LỖI ĐỌC EXCEL]: {e}")
+        tao_html_trong(now_dt, f"Lỗi định dạng: Không thể trích xuất nội dung từ file excel: {e}")
         return
     
     col_ticker = 'Ticker' if 'Ticker' in df_company.columns else df_company.columns[0]
     col_nganh = 'Ngành' if 'Ngành' in df_company.columns else df_company.columns[6]
 
-    print(f"[LOG] Cột mã cổ phiếu sử dụng: '{col_ticker}' | Cột Tên ngành sử dụng: '{col_nganh}'")
-
     df_company[col_ticker] = df_company[col_ticker].astype(str).str.strip().str.upper()
     df_company[col_nganh] = df_company[col_nganh].astype(str).str.strip()
 
     nhom_nganh_dict = {"VINGROUP": []}
-    count_valid_rows = 0
-
     for index, row in df_company.iterrows():
         ma = row[col_ticker]
         nganh_goc = row[col_nganh]
-        
         if nganh_goc == 'nan' or not ma or len(ma) != 3:
             continue
-            
-        count_valid_rows += 1
         if ma in MA_VINGROUP:
             if ma not in nhom_nganh_dict["VINGROUP"]:
                 nhom_nganh_dict["VINGROUP"].append(ma)
@@ -158,9 +175,6 @@ def main():
                 nhom_nganh_dict[nganh_goc] = []
             if ma not in nhom_nganh_dict[nganh_goc]:
                 nhom_nganh_dict[nganh_goc].append(ma)
-
-    print(f"[LOG] Tổng số mã cổ phiếu hợp lệ được lọc ra từ file excel: {count_valid_rows}")
-    print(f"[LOG] Tổng số nhóm ngành phân tách được: {len(nhom_nganh_dict)}")
 
     danh_sach_kq_nganh = []
     for nganh, list_ticker in nhom_nganh_dict.items():
@@ -182,19 +196,17 @@ def main():
         danh_sach_kq_nganh.append(df_nganh_final)
 
     if not danh_sach_kq_nganh:
-        print("[LOG LỖI RẤT LỚN] Không tính toán được dữ liệu trung bình cho bất kỳ ngành nào. Hãy kiểm tra lại xem danh sách Ticker trong file excel có khớp mã với sàn giao dịch hay không.")
+        print("[LOG LỖI DIỄN BIẾN] Không khớp được mã cổ phiếu nào.")
+        tao_html_trong(now_dt, "Không trích xuất được số liệu ngành. Vui lòng kiểm tra lại tính chính xác của cột Ticker trong file Excel.")
         return
 
     df_tong_hop_nganh = pd.concat(danh_sach_kq_nganh, ignore_index=True)
     df_tong_hop_nganh.rename(columns={'Ngành': 'name', 'BD_gia': 'percent_change', 'KLTB_KLTB21': 'volume_ratio'}, inplace=True)
     
-    tz_vn = timezone(timedelta(hours=7))
-    now_dt = datetime.now(tz_vn)
     df_dash = df_tong_hop_nganh.copy()
     df_dash['percent_change'] = df_dash['percent_change'] * 100
     df_dash = df_dash.sort_values(by="percent_change", ascending=False)
 
-    print(f"[LOG] Bắt đầu vẽ đồ thị biểu đồ Plotly cho {len(df_dash)} ngành...")
     fig = io_go.Figure()
     colors_bar = ['#198754' if x >= 0 else '#dc3545' for x in df_dash['percent_change']]
     
@@ -226,7 +238,7 @@ def main():
     html_table = df_dash[['name', 'percent_change', 'volume_ratio']].to_html(classes='table table-dark table-striped text-center table-bordered', index=False, float_format=lambda x: f"{x:.2f}")
     
     df_idx = get_data_index()
-    html_idx = df_idx.to_html(classes='table table-dark text-center table-bordered table-striped', index=False) if not df_idx.empty else "<p>Không có dữ liệu chỉ số thị trường</p>"
+    html_idx = df_idx.to_html(classes='table table-dark text-center table-bordered table-striped', index=False) if not df_idx.empty else "<p>Không có dữ liệu</p>"
 
     full_html = f"""
     <!DOCTYPE html>
@@ -268,11 +280,9 @@ def main():
     </body>
     </html>
     """
-    
-    print("[LOG] Đang ghi file dữ liệu ra index.html...")
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-    print("=== HOÀN TẤT: FILE INDEX.HTML ĐÃ ĐƯỢC TẠO THÀNH CÔNG ===")
+    print("=== HOÀN TẤT: FILE INDEX.HTML MỚI ĐÃ ĐƯỢC TẠO THÀNH CÔNG ===")
 
 if __name__ == "__main__":
     main()
