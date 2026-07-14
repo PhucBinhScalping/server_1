@@ -15,6 +15,9 @@ head = {"User-Agent": random_user()}
 # Danh sách các mã thuộc nhóm Vingroup
 MA_VINGROUP = ["VIC", "VRE", "VHM", "VPL"]
 
+# Định nghĩa chính xác tên file excel mới nằm ở thư mục gốc
+FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
+
 def download_all_market_history():
     try:
         tz_vn = timezone(timedelta(hours=7))
@@ -97,16 +100,9 @@ def get_data_index():
 def main():
     print("=== HỆ THỐNG PHÂN TÍCH DIỄN BIẾN NGÀNH SONG TRỤC ===")
     
-    # TỰ ĐỘNG DÒ TÌM FILE EXCEL TRONG THƯ MỤC DATA
-    target_file = None
-    if os.path.exists("data"):
-        files = [os.path.join("data", f) for f in os.listdir("data") if f.endswith('.xlsx')]
-        if files:
-            target_file = files[0] # Lấy file excel đầu tiên tìm thấy
-            print(f"-> Đã tìm thấy file danh sách cổ phiếu: {target_file}")
-            
-    if not target_file:
-        print("LỖI KHẨN CẤP: Không tìm thấy bất kỳ file .xlsx nào trong thư mục data!")
+    # Kiểm tra sự tồn tại của file cấu hình mới tại thư mục gốc
+    if not os.path.exists(FILE_DANH_SACH):
+        print(f"LỖI KHẨN CẤP: Không tìm thấy file danh sách cổ phiếu mới '{FILE_DANH_SACH}' tại thư mục gốc repo!")
         return
 
     market_df = download_all_market_history()
@@ -114,11 +110,16 @@ def main():
         print("[Lỗi] Không lấy được dữ liệu lịch sử từ API.")
         return
 
-    df_company = pd.read_excel(target_file)
+    print(f"-> Đang tiến hành đọc dữ liệu từ file mới: {FILE_DANH_SACH}")
+    # Đọc dữ liệu từ Sheet1 hoặc sheet đầu tiên của file excel mới
+    df_company = pd.read_excel(FILE_DANH_SACH)
     df_company.columns = df_company.columns.str.strip()
     
-    col_nganh = 'Ngành Cấp 2' if 'Ngành Cấp 2' in df_company.columns else ('Ngành' if 'Ngành' in df_company.columns else df_company.columns[1])
-    col_ticker = 'Ticker' if 'Ticker' in df_company.columns else ('Mã' if 'Mã' in df_company.columns else df_company.columns[0])
+    # Xác định các cột tương ứng với cấu hình file mới (Ticker và Ngành)
+    col_ticker = 'Ticker' if 'Ticker' in df_company.columns else df_company.columns[0]
+    col_nganh = 'Ngành' if 'Ngành' in df_company.columns else df_company.columns[6]
+
+    print(f"-> Đang ánh xạ dữ liệu theo cột Mã cổ phiếu [{col_ticker}] và cột Tên ngành [{col_nganh}]")
 
     df_company[col_ticker] = df_company[col_ticker].astype(str).str.strip().str.upper()
     df_company[col_nganh] = df_company[col_nganh].astype(str).str.strip()
@@ -128,8 +129,11 @@ def main():
     for index, row in df_company.iterrows():
         ma = row[col_ticker]
         nganh_goc = row[col_nganh]
+        
+        # Bỏ qua dòng trống hoặc mã không đúng độ dài tiêu chuẩn
         if nganh_goc == 'nan' or not ma or len(ma) != 3:
             continue
+            
         if ma in MA_VINGROUP:
             if ma not in nhom_nganh_dict["VINGROUP"]:
                 nhom_nganh_dict["VINGROUP"].append(ma)
@@ -159,7 +163,7 @@ def main():
         danh_sach_kq_nganh.append(df_nganh_final)
 
     if not danh_sach_kq_nganh:
-        print("Lỗi: Không xử lý được dữ liệu ngành nào.")
+        print("Lỗi: Không tính toán được chỉ số trung bình cho bất kỳ ngành nào từ file mới.")
         return
 
     df_tong_hop_nganh = pd.concat(danh_sach_kq_nganh, ignore_index=True)
@@ -171,15 +175,17 @@ def main():
     df_dash['percent_change'] = df_dash['percent_change'] * 100
     df_dash = df_dash.sort_values(by="percent_change", ascending=False)
 
-    # Khởi tạo đồ thị song trục Plotly chuyên nghiệp
+    # Biểu đồ diễn biến ngành chuẩn giao diện tối (Dark Theme)
     fig = io_go.Figure()
     colors_bar = ['#198754' if x >= 0 else '#dc3545' for x in df_dash['percent_change']]
+    
     fig.add_trace(io_go.Bar(
         x=df_dash['name'], y=df_dash['percent_change'],
         name='Biến động giá (%)', marker_color=colors_bar,
         text=df_dash['percent_change'].apply(lambda x: f"{x:.2f}%"),
         textposition='auto', yaxis='y1'
     ))
+    
     fig.add_trace(io_go.Scatter(
         x=df_dash['name'], y=df_dash['volume_ratio'],
         name='KL/TBKL21 (Lần)', mode='lines+markers',
@@ -198,28 +204,46 @@ def main():
     )
 
     html_charts = pio.to_html(fig, full_html=False, include_plotlyjs='cdn')
-    html_table = df_dash[['name', 'percent_change', 'volume_ratio']].to_html(classes='table table-dark table-striped text-center', index=False, float_format=lambda x: f"{x:.2f}")
+    html_table = df_dash[['name', 'percent_change', 'volume_ratio']].to_html(classes='table table-dark table-striped text-center table-bordered', index=False, float_format=lambda x: f"{x:.2f}")
     
     df_idx = get_data_index()
-    html_idx = df_idx.to_html(classes='table table-dark text-center', index=False) if not df_idx.empty else "<p>Không có dữ liệu chỉ số</p>"
+    html_idx = df_idx.to_html(classes='table table-dark text-center table-bordered table-striped', index=False) if not df_idx.empty else "<p>Không có dữ liệu chỉ số thị trường</p>"
 
     full_html = f"""
     <!DOCTYPE html>
     <html lang="vi">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Dashboard Biến Động Ngành</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-        <style>body {{ background-color: #121416; color: #ffffff; }} .card {{ background-color: #212529; }}</style>
+        <style>
+            body {{ background-color: #121416; color: #ffffff; }}
+            .card {{ background-color: #212529; border: 1px solid #343a40; }}
+            .card-header {{ background-color: #2b3035; color: #fff; border-bottom: 1px solid #343a40; }}
+        </style>
     </head>
     <body>
         <div class="container-fluid px-4 my-4">
-            <h2 class="text-center text-warning fw-bold mb-4">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
-            <p class="text-center text-secondary">Cập nhật: {now_dt.strftime('%d/%m/%Y %H:%M:%S')}</p>
-            <div class="card mb-4"><div class="card-body">{html_charts}</div></div>
+            <h2 class="text-center text-warning fw-bold mb-2 text-uppercase">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
+            <p class="text-center text-secondary mb-4">Cập nhật phiên mới nhất: <span class="badge bg-danger">{now_dt.strftime('%d/%m/%Y %H:%M:%S')}</span></p>
+            <div class="card mb-4">
+                <div class="card-header fw-bold text-center text-info">📊 BIỂU ĐỒ DIỄN BIẾN GIÁ & THANH KHOẢN KHỐI LƯỢNG SONG TRỤC</div>
+                <div class="card-body p-1" style="min-height: 530px;">{html_charts}</div>
+            </div>
             <div class="row">
-                <div class="col-md-5"><div class="card p-3">{html_table}</div></div>
-                <div class="col-md-7"><div class="card p-3">{html_idx}</div></div>
+                <div class="col-xl-5 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold text-center text-success">📋 CHI TIẾT SỐ LIỆU THỐNG KÊ NGÀNH</div>
+                        <div class="card-body table-responsive">{html_table}</div>
+                    </div>
+                </div>
+                <div class="col-xl-7 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header fw-bold text-center text-warning">🌐 CHỈ SỐ TOÀN THỊ TRƯỜNG CHUNG</div>
+                        <div class="card-body table-responsive">{html_idx}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </body>
