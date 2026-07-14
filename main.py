@@ -1,6 +1,6 @@
 import datetime as dt
 import pandas as pd
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 import requests
 import time
 from user_agent import random_user
@@ -36,7 +36,9 @@ def get_data_index():
 # =====================================================================
 def tinh_du_lieu_cp(symbol):
     try:
-        todate = datetime.now()
+        # Lấy thời gian hiện tại theo múi giờ Việt Nam (UTC+7)
+        tz_vn = timezone(timedelta(hours=7))
+        todate = datetime.now(tz_vn)
         fromdate = todate - timedelta(days=200)
         fdate = fromdate.strftime('%Y-%m-%d')
         tdate = todate.strftime('%Y-%m-%d')
@@ -74,14 +76,12 @@ def tinh_du_lieu_cp(symbol):
         giam_sdinh = float((gia_close - dinh2t) / dinh2t if dinh2t > 0 else 0)
         tang_sday = float((gia_close - day2t) / day2t if day2t > 0 else 0)
 
-        # Trả về mảng dữ liệu đầy đủ 11 chỉ số tương ứng các cột Excel của bạn
         return [gia_close, KL1000, BD_gia, KLTB_KLTB21, gia_tbgia5, KL_KLTB5, dinh_day, day2t, dinh2t, tang_sday, giam_sdinh]
     except Exception as e:
-        # Nếu lỗi mạng hoặc mã lỗi, trả về None để bỏ qua an toàn
         return None
 
 # =====================================================================
-# HÀM TIẾN TRÌNH CHÍNH (ĐỌC EXCEL -> TÍNH TOÁN -> GHI LẠI -> VẼ BIỂU ĐỒ)
+# HÀM TIẾN TRÌNH CHÍNH
 # =====================================================================
 def main():
     print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU FILE EXCEL ===")
@@ -95,9 +95,7 @@ def main():
 
     summary_data = []
     
-    # 1. Duyệt qua từng Sheet ngành trong file Excel để cập nhật số liệu
     for sheet_name in wb.sheetnames:
-        # Loại trừ các sheet hệ thống và sheet giao diện chính
         if sheet_name.lower() in ["dashboard", "index", "summary", "sheet1", "sheet2"]:
             continue
             
@@ -107,7 +105,6 @@ def main():
         row_idx = 2
         symbols = []
         
-        # Đọc danh sách mã ở cột A cho đến khi gặp ô trống
         while True:
             cell_val = sheet.cell(row=row_idx, column=1).value
             if cell_val is None:
@@ -128,14 +125,12 @@ def main():
                 
             res = tinh_du_lieu_cp(sym)
             
-            # Kiểm tra định dạng đầu ra linh hoạt
             if isinstance(res, list) and len(res) >= 3:
                 try:
-                    # Ghi đầy đủ 11 chỉ số vào các cột từ B đến L
                     for col_idx, val in enumerate(res, start=2):
                         sheet.cell(row=row, column=col_idx, value=val)
                     
-                    total_bd_gia += float(res[2])  # Vị trí số 2 tương ứng Biến động giá
+                    total_bd_gia += float(res[2])  
                     total_kltb += float(res[3]) if len(res) > 3 else 0.0
                     count_valid += 1
                 except Exception as e:
@@ -149,10 +144,8 @@ def main():
                 except Exception as e:
                     print(f"Lỗi ghi dữ liệu dạng số cho mã {sym}: {e}")
             
-            # Thời gian nghỉ ngắn 0.15 giây để tránh bị chặn IP khi quét nhiều mã
-            time.sleep(0.15)
+            time.sleep(0.05)
             
-        # Tính toán giá trị trung bình nếu nhóm ngành có dữ liệu hợp lệ
         if count_valid > 0:
             avg_bd = (total_bd_gia / count_valid) * 100
             avg_kl = total_kltb / count_valid
@@ -161,55 +154,49 @@ def main():
                 "Biến động TB (%)": round(avg_bd, 2),
                 "Thanh khoản TB (Lần)": round(avg_kl, 2)
             })
-            print(f"   => Ngành {sheet_name} hoàn thành ({count_valid} mã). Biến động TB: {round(avg_bd, 2)}%")
 
-    # 2. Cập nhật kết quả trung bình ngành vào sheet Dashboard của Excel
     if "Dashboard" in wb.sheetnames and summary_data:
         dash_sheet = wb["Dashboard"]
-        
-        # Xóa dữ liệu cũ một cách an toàn tại bảng tổng hợp (Cột A, B, C từ dòng 3 đến 40)
         for r in range(3, 40):
             dash_sheet.cell(row=r, column=1, value=None)
             dash_sheet.cell(row=r, column=2, value=None)
             dash_sheet.cell(row=r, column=3, value=None)
             
-        # Ghi đè dữ liệu mới được tính toán
         for idx, data in enumerate(summary_data, start=3):
             dash_sheet.cell(row=idx, column=1, value=data["Nhóm Ngành"])
-            dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) # Định dạng %
+            dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) 
             dash_sheet.cell(row=idx, column=3, value=data["Thanh khoản TB (Lần)"])
             
     try:
         wb.save(file_path)
         print("=== ĐÃ LƯU DỮ LIỆU MỚI VÀO FILE EXCEL THÀNH CÔNG ===")
     except Exception as save_err:
-        print(f"Không thể lưu file Excel (Có thể tệp tin đang mở): {save_err}")
+        print(f"Không thể lưu file Excel: {save_err}")
 
     # =====================================================================
-    # 3. ĐỒNG BỘ ĐỒ THỊ VÀ XUẤT RA GIAO DIỆN WEB HTML (INDEX.HTML)
+    # XUẤT RA WEB HTML VỚI MÚI GIỜ VIỆT NAM +7 KHÔNG BỊ LỆCH
     # =====================================================================
     df_dash = pd.DataFrame(summary_data)
     html_charts = ""
     html_table = "<p>Không có số liệu tổng hợp ngành</p>"
     
     if not df_dash.empty:
-        # Sắp xếp ngành từ tăng mạnh nhất tới giảm mạnh nhất để tạo đồ thị cột đẹp mắt
         df_dash = df_dash.sort_values(by="Biến động TB (%)", ascending=False)
-        
         fig_p = px.bar(df_dash, x='Nhóm Ngành', y='Biến động TB (%)', 
                        title="Biến Động Giá Trung Bình Theo Từng Nhóm Ngành (%)", text_auto='.2f',
                        color='Biến động TB (%)', color_continuous_scale='RdYlGn',
                        labels={'Biến động TB (%)': 'Biến động (%)'})
-        
         fig_p.update_layout(xaxis_title="Nhóm Ngành", yaxis_title="Biến động (%)", title_x=0.5)
-                       
         html_charts = pio.to_html(fig_p, full_html=False, include_plotlyjs='cdn')
         html_table = df_dash.to_html(classes='table table-hover table-striped table-bordered text-center', index=False)
 
     df_idx = get_data_index()
     html_idx = df_idx.to_html(classes='table table-bordered text-center table-info', index=False) if not df_idx.empty else ""
 
-    now_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    # LẤY THỜI GIAN HIỆN TẠI THEO MÚI GIỜ VIỆT NAM CHUẨN ĐỂ HIỂN THỊ TRÊN WEB
+    tz_vn = timezone(timedelta(hours=7))
+    now_str = datetime.now(tz_vn).strftime("%d/%m/%Y %H:%M:%S")
+    
     full_html = f"""
     <!DOCTYPE html>
     <html lang="vi">
@@ -227,16 +214,12 @@ def main():
         <div class="container my-5">
             <div class="text-center mb-5">
                 <h2 class="fw-bold text-dark">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
-                <p class="text-muted">Đo lường >1000 mã từ Excel | Cập nhật lúc: <span class="badge bg-danger">{now_str}</span></p>
+                <p class="text-muted">Múi giờ Việt Nam (+7) | Cập nhật lúc: <span class="badge bg-danger">{now_str}</span></p>
             </div>
-            
             <div class="card border-primary">
                 <div class="card-header bg-primary text-white">📊 BIỂU ĐỒ DIỄN BIẾN CÁC NHÓM NGÀNH (ĐỒNG BỘ FILE EXCEL)</div>
-                <div class="card-body">
-                    {html_charts}
-                </div>
+                <div class="card-body">{html_charts}</div>
             </div>
-            
             <div class="row">
                 <div class="col-md-5">
                     <div class="card">
@@ -255,7 +238,6 @@ def main():
     </body>
     </html>
     """
-    
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
     print("=== ĐÃ XUẤT THÀNH CÔNG GIAO DIỆN INDEX.HTML VÀ BIỂU ĐỒ ĐỒNG BỘ ===")
