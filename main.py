@@ -13,20 +13,29 @@ global head
 head = {"User-Agent": random_user()}
 
 # =====================================================================
-# 1. TẢI TOÀN BỘ DỮ LIỆU THỊ TRƯỜNG TRONG 1 CÚ CLICK
+# 1. TẢI TOÀN BỘ DỮ LIỆU THỊ TRƯỜNG TRONG 1 CÚ CLICK (TỐI ƯU THỜI GIAN)
 # =====================================================================
 def download_all_market_data():
-    """Lấy toàn bộ giá đóng cửa và biến động của tất cả mã trong phiên hôm nay"""
+    """Lấy toàn bộ giá đóng cửa và biến động của tất cả mã trong 3 ngày gần nhất"""
     try:
-        url = "https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:2026-01-01&size=5000&page=1"
+        # Lấy múi giờ VN để tính toán ngày chính xác
+        tz_vn = timezone(timedelta(hours=7))
+        todate = datetime.now(tz_vn)
+        # Chỉ quét dữ liệu trong 3 ngày gần đây để giảm tải dung lượng và tránh vượt giới hạn API
+        fromdate = todate - timedelta(days=3)
+        fdate = fromdate.strftime('%Y-%m-%d')
+
+        url = f"https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:{fdate}&size=5000&page=1"
         r = requests.get(url, headers=head, timeout=15)
         if r.status_code == 200 and 'data' in r.json():
             df = pd.DataFrame(r.json()['data'])
             if df.empty:
                 return pd.DataFrame()
-            # Chỉ lấy phiên gần nhất của từng mã
-            df = df.sort_values(by='date', ascending=False).drop_duplicates(subset=['code'])
-            # Thiết lập mã cổ phiếu làm chỉ mục để tìm kiếm siêu tốc
+            # Sắp xếp theo ngày mới nhất lên trên
+            df = df.sort_values(by='date', ascending=False)
+            # Giữ lại bản ghi mới nhất của từng mã cổ phiếu
+            df = df.drop_duplicates(subset=['code'])
+            # Thiết lập mã cổ phiếu làm chỉ mục tra cứu nhanh
             df.set_index('code', inplace=True)
             return df
     except Exception as e:
@@ -64,7 +73,7 @@ def main():
     print("-> Đang tải bảng giá toàn thị trường từ VNDirect...")
     market_df = download_all_market_data()
     if market_df.empty:
-        print("Không có dữ liệu thị trường, dừng tiến trình.")
+        print("[Lỗi] Bảng dữ liệu trống, kiểm tra lại kết nối API.")
         return
     print("-> Tải thành công! Bắt đầu ánh xạ vào Excel...")
 
@@ -97,8 +106,7 @@ def main():
                 try:
                     row_data = market_df.loc[sym]
                     
-                    # KIỂM TRA AN TOÀN TRƯỚC KHI TRÍCH XUẤT (TRÁNH LỖI KEYERROR)
-                    # Nếu row_data là Series (chỉ có 1 dòng duy nhất cho 1 mã - chuẩn dữ liệu)
+                    # Kiểm tra và bóc tách dữ liệu
                     if isinstance(row_data, pd.Series):
                         if 'close' not in row_data or 'pctChange' not in row_data:
                             continue
@@ -107,7 +115,6 @@ def main():
                         pt_vol_val = row_data.get('ptVolume', 0)
                         pct_change_val = row_data['pctChange']
                     else:
-                        # Trường hợp khẩn cấp nếu bị trùng lặp dữ liệu trả về dạng DataFrame
                         if 'close' not in row_data.columns or 'pctChange' not in row_data.columns:
                             continue
                         close_val = row_data['close'].iloc[0]
@@ -130,7 +137,7 @@ def main():
                     total_bd_gia += bd_gia
                     count_valid += 1
                 except Exception:
-                    pass  # Bỏ qua mã lỗi để tiếp tục mạch chạy của file Excel
+                    pass  
 
         if count_valid > 0:
             avg_bd = (total_bd_gia / count_valid) * 100
