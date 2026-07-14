@@ -12,15 +12,11 @@ from user_agent import random_user
 global head
 head = {"User-Agent": random_user()}
 
-# =====================================================================
-# 1. TẢI TOÀN BỘ DỮ LIỆU THỊ TRƯỜNG TRONG 1 CÚ CLICK (MỞ RỘNG BẢO VỆ)
-# =====================================================================
 def download_all_market_data():
     """Lấy toàn bộ giá đóng cửa và biến động của tất cả mã trong 10 ngày gần nhất"""
     try:
         tz_vn = timezone(timedelta(hours=7))
         todate = datetime.now(tz_vn)
-        # Mở rộng ra 10 ngày để chắc chắn lấy được dữ liệu ngay cả qua các ngày nghỉ/lễ dài ngày
         fromdate = todate - timedelta(days=10)
         fdate = fromdate.strftime('%Y-%m-%d')
 
@@ -30,11 +26,8 @@ def download_all_market_data():
             df = pd.DataFrame(r.json()['data'])
             if df.empty:
                 return pd.DataFrame()
-            # Sắp xếp theo ngày mới nhất lên trên
             df = df.sort_values(by='date', ascending=False)
-            # Giữ lại bản ghi mới nhất của từng mã cổ phiếu
             df = df.drop_duplicates(subset=['code'])
-            # Thiết lập mã cổ phiếu làm chỉ mục tra cứu nhanh
             df.set_index('code', inplace=True)
             return df
     except Exception as e:
@@ -55,23 +48,19 @@ def get_data_index():
     except Exception:
         return pd.DataFrame()
 
-# =====================================================================
-# 2. TIẾN TRÌNH CHÍNH (XỬ LÝ TRONG BỘ NHỚ SIÊU TỐC & AN TOÀN)
-# =====================================================================
 def main():
     print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU SIÊU TỐC ===")
     file_path = "THONG_KE_VNINDEX_VN30.xlsm"
     summary_data = []
     
+    # 1. ĐỌC VÀ XỬ LÝ EXCEL (BẢO VỆ BẰNG TRY-EXCEPT ĐỂ LUÔN CHẠY ĐẾN BƯỚC TẠO HTML)
     try:
         wb = openpyxl.load_workbook(file_path, keep_vba=True)
-        
-        # Tải trước toàn bộ bảng giá thị trường về bộ nhớ
         print("-> Đang tải bảng giá toàn thị trường từ VNDirect...")
         market_df = download_all_market_data()
         
         if market_df.empty:
-            print("[Cảnh báo] Bảng dữ liệu trống hoặc API nghẽn. Excel giữ nguyên giá cũ.")
+            print("[Cảnh báo] Bảng dữ liệu trống. Giữ nguyên giá cũ trong Excel.")
         else:
             print("-> Tải thành công! Bắt đầu ánh xạ vào Excel...")
             for sheet_name in wb.sheetnames:
@@ -95,13 +84,10 @@ def main():
                 total_bd_gia = 0.0
                 count_valid = 0
                 
-                # Tra cứu trực tiếp từ bảng dữ liệu đã tải sẵn
                 for row, sym in symbols:
                     if sym in market_df.index:
                         try:
                             row_data = market_df.loc[sym]
-                            
-                            # Kiểm tra và bóc tách dữ liệu
                             if isinstance(row_data, pd.Series):
                                 if 'close' not in row_data or 'pctChange' not in row_data:
                                     continue
@@ -117,14 +103,12 @@ def main():
                                 pt_vol_val = row_data['ptVolume'].iloc[0] if 'ptVolume' in row_data.columns else 0
                                 pct_change_val = row_data['pctChange'].iloc[0]
 
-                            # Ép kiểu dữ liệu an toàn
                             gia_close = float(pd.to_numeric(close_val, errors='coerce'))
                             nm_vol = float(pd.to_numeric(nm_vol_val, errors='coerce')) if pd.notna(nm_vol_val) else 0.0
                             pt_vol = float(pd.to_numeric(pt_vol_val, errors='coerce')) if pd.notna(pt_vol_val) else 0.0
                             kl_1000 = (nm_vol + pt_vol) / 1000
                             bd_gia = float(pd.to_numeric(pct_change_val, errors='coerce') / 100) if pd.notna(pct_change_val) else 0.0
                             
-                            # Ghi nhanh dữ liệu vào Excel (Cột B, C, D)
                             sheet.cell(row=row, column=2, value=gia_close)
                             sheet.cell(row=row, column=3, value=kl_1000)
                             sheet.cell(row=row, column=4, value=bd_gia)
@@ -141,9 +125,7 @@ def main():
                         "Biến động TB (%)": round(avg_bd, 2),
                         "Thanh khoản TB (Lần)": 1.0
                     })
-                    print(f"   => Ngành {sheet_name} hoàn thành. Biến động TB: {round(avg_bd, 2)}%")
 
-            # Ghi kết quả tổng hợp vào Dashboard
             if "Dashboard" in wb.sheetnames and summary_data:
                 dash_sheet = wb["Dashboard"]
                 for r in range(3, 40):
@@ -157,17 +139,14 @@ def main():
                     dash_sheet.cell(row=idx, column=3, value=data["Thanh khoản TB (Lần)"])
                     
             wb.save(file_path)
-            print("=== ĐÃ LƯU DỮ LIỆU MỚI VÀO FILE EXCEL THÀNH CÔNG ===")
-            
+            print("=== ĐÃ LƯU EXCEL THÀNH CÔNG ===")
     except Exception as e:
-        print(f"Lỗi tiến trình xử lý Excel: {e}")
+        print(f"[Cảnh báo] Lỗi xử lý file Excel: {e}")
 
-    # =====================================================================
-    # 3. LUÔN LUÔN XUẤT FILE HTML (ĐỂ BẢO VỆ WORKFLOW GITHUB ACTIONS KHÔNG SẬP)
-    # =====================================================================
+    # 2. BƯỚC BẮT BUỘC: LUÔN XUẤT FILE INDEX.HTML ĐỂ TRÁNH LỖI WORKFLOW
     df_dash = pd.DataFrame(summary_data)
     html_charts = ""
-    html_table = "<p class='text-danger'>Không có dữ liệu tổng hợp ngành (Phiên giao dịch chưa mở hoặc lỗi API)</p>"
+    html_table = "<p class='text-muted p-3'>Không có dữ liệu tổng hợp ngành tại thời điểm này.</p>"
     
     if not df_dash.empty:
         df_dash = df_dash.sort_values(by="Biến động TB (%)", ascending=False)
@@ -180,7 +159,7 @@ def main():
         html_table = df_dash.to_html(classes='table table-hover table-striped table-bordered text-center', index=False)
 
     df_idx = get_data_index()
-    html_idx = df_idx.to_html(classes='table table-bordered text-center table-info', index=False) if not df_idx.empty else "<p>Không tải được chỉ số tổng quan</p>"
+    html_idx = df_idx.to_html(classes='table table-bordered text-center table-info', index=False) if not df_idx.empty else "<p>Chưa có chỉ số thị trường</p>"
 
     tz_vn = timezone(timedelta(hours=7))
     now_str = datetime.now(tz_vn).strftime("%d/%m/%Y %H:%M:%S")
@@ -192,34 +171,23 @@ def main():
         <meta charset="UTF-8">
         <title>Dashboard Diễn Biến Nhóm Ngành</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-        <style>
-            body {{ background-color: #f4f6f9; font-family: 'Segoe UI', Arial, sans-serif; }}
-            .card {{ border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 30px; }}
-            .card-header {{ font-weight: bold; font-size: 1.2rem; }}
-        </style>
     </head>
-    <body>
+    <body style="background-color: #f4f6f9;">
         <div class="container my-5">
             <div class="text-center mb-5">
-                <h2 class="fw-bold text-dark">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
-                <p class="text-muted">Múi giờ Việt Nam (+7) | Cập nhật lúc: <span class="badge bg-danger">{now_str}</span></p>
+                <h2 class="fw-bold">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
+                <p>Cập nhật lần cuối: <span class="badge bg-danger">{now_str}</span></p>
             </div>
-            <div class="card border-primary">
-                <div class="card-header bg-primary text-white">📊 BIỂU ĐỒ DIỄN BIẾN CÁC NHÓM NGÀNH (ĐỒNG BỘ FILE EXCEL)</div>
-                <div class="card-body">{html_charts if html_charts else "<div class='text-center p-4 text-muted'>Chưa có dữ liệu biểu đồ phân tích phiên hôm nay.</div>"}</div>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">📊 BIỂU ĐỒ DIỄN BIẾN</div>
+                <div class="card-body">{html_charts if html_charts else "Chưa có biểu đồ."}</div>
             </div>
             <div class="row">
                 <div class="col-md-5">
-                    <div class="card">
-                        <div class="card-header bg-dark text-white">📋 CHI TIẾT SỐ LIỆU TRUNG BÌNH CÁC NGÀNH</div>
-                        <div class="card-body table-responsive">{html_table}</div>
-                    </div>
+                    <div class="card"><div class="card-header bg-dark text-white">📋 CHI TIẾT NGÀNH</div><div class="card-body">{html_table}</div></div>
                 </div>
                 <div class="col-md-7">
-                    <div class="card">
-                        <div class="card-header bg-info text-dark">🌐 CHỈ SỐ THỊ TRƯỜNG TỔNG QUAN</div>
-                        <div class="card-body table-responsive">{html_idx}</div>
-                    </div>
+                    <div class="card"><div class="card-header bg-info">🌐 CHỈ SỐ CHUNG</div><div class="card-body">{html_idx}</div></div>
                 </div>
             </div>
         </div>
@@ -228,7 +196,7 @@ def main():
     """
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-    print("=== ĐÃ LUÔN TẠO THÀNH CÔNG FILE INDEX.HTML ĐỂ TRÁNH LỖI GIT PUSH ===")
+    print("=== ĐÃ KHỞI TẠO FILE INDEX.HTML AN TOÀN ===")
 
 if __name__ == "__main__":
     main()
