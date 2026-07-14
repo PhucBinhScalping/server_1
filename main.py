@@ -12,18 +12,16 @@ from user_agent import random_user
 global head
 head = {"User-Agent": random_user()}
 
-# ĐƯỜNG DẪN ĐẾN FILE DANH SÁCH CÔNG TY TRONG THƯ MỤC DATA CỦA BẠN
-# (Bạn có thể đổi thành "data/ds_nganh_da_loc.xlsx" nếu muốn dùng file kia)
+# Đường dẫn file excel danh sách công ty đầu vào (giữ lại theo ý bạn)
 url_danh_sach_cty = "data/danh_sach_cong_ty.xlsx"
 
 # Danh sách các mã thuộc nhóm Vingroup
 MA_VINGROUP = ["VIC", "VRE", "VHM", "VPL"]
 
 # =====================================================================
-# 1. TẢI TOÀN BỘ DỮ LIỆU LỊCH SỬ 60 PHIÊN CỦA TOÀN THỊ TRƯỜNG TỪ API
+# 1. TẢI TOÀN BỘ DỮ LIỆU LỊCH SỬ TỪ API VỀ BỘ NHỚ RAM
 # =====================================================================
 def download_all_market_history():
-    """Tải dữ liệu của tất cả các mã trong khoảng 90 ngày để lọc đủ 60 phiên giao dịch thực tế"""
     try:
         tz_vn = timezone(timedelta(hours=7))
         todate = datetime.now(tz_vn)
@@ -60,7 +58,7 @@ def download_all_market_history():
     return pd.DataFrame()
 
 # =====================================================================
-# 2. HÀM TÍNH TOÁN DỮ LIỆU CỦA 1 CỔ PHIẾU TRÊN BỘ NHỚ RAM
+# 2. HÀM TÍNH TOÁN DỮ LIỆU CỦA 1 CỔ PHIẾU TRÊN RAM
 # =====================================================================
 def tinh_du_lieu_cp_from_ram(symbol, market_df):
     try:
@@ -115,7 +113,7 @@ def get_data_index():
         return pd.DataFrame()
 
 # =====================================================================
-# 3. HÀM ĐIỀU PHỐI CHÍNH VÀ VẼ BIỂU ĐỒ SONG TRỤC NỀN TỐI
+# 3. HÀM ĐIỀU PHỐI CHÍNH VÀ VẼ BIỂU ĐỒ SONG TRỤC NỀN TỐI (DARK MODE)
 # =====================================================================
 def main():
     print("=== HỆ THỐNG PHÂN TÍCH DIỄN BIẾN NGÀNH SONG TRỤC ===")
@@ -129,11 +127,9 @@ def main():
         print("[Lỗi] Không lấy được dữ liệu lịch sử từ API.")
         return
 
-    # Đọc danh sách công ty từ Excel
     df_company = pd.read_excel(url_danh_sach_cty)
     df_company.columns = df_company.columns.str.strip()
     
-    # Nhận diện cột tự động linh hoạt
     col_nganh = 'Ngành Cấp 2' if 'Ngành Cấp 2' in df_company.columns else ('Ngành' if 'Ngành' in df_company.columns else df_company.columns[1])
     col_ticker = 'Ticker' if 'Ticker' in df_company.columns else ('Mã' if 'Mã' in df_company.columns else df_company.columns[0])
 
@@ -142,7 +138,7 @@ def main():
 
     nhom_nganh_dict = {"VINGROUP": []}
 
-    # Phân loại mã từ Excel vào các nhóm tương ứng
+    # Phân loại mã từ file Excel đầu vào và loại bỏ VIC VRE VHM khỏi nhóm BĐS
     for index, row in df_company.iterrows():
         ma = row[col_ticker]
         nganh_goc = row[col_nganh]
@@ -186,7 +182,6 @@ def main():
         df_nganh_final = result_series.to_frame().T
         df_nganh_final.insert(0, 'Ngành', nganh)
         danh_sach_kq_nganh.append(df_nganh_final)
-        print(f" -> Xử lý ngành: {nganh} ({len(list_ds_tb)} mã thực tế đạt chuẩn)")
 
     if not danh_sach_kq_nganh:
         print("Không có dữ liệu ngành nào được tính toán thành công.")
@@ -201,10 +196,12 @@ def main():
     df_dash['percent_change'] = df_dash['percent_change'] * 100
     df_dash = df_dash.sort_values(by="percent_change", ascending=False)
 
-    # Khởi tạo biểu đồ song trục Y chuyên nghiệp
+    # -----------------------------------------------------------------
+    # KHỞI TẠO BIỂU ĐỒ SONG TRỤC (DUAL AXIS PLOTLY) THEO MẪU ẢNH
+    # -----------------------------------------------------------------
     fig = io_go.Figure()
 
-    # Trục Y1 (Trái): Cột biến động giá % (Xanh/Đỏ)
+    # Trục Y bên trái: Cột biến động giá % (Xanh dương/Đỏ)
     colors_bar = ['#198754' if x >= 0 else '#dc3545' for x in df_dash['percent_change']]
     fig.add_trace(io_go.Bar(
         x=df_dash['name'], y=df_dash['percent_change'],
@@ -213,7 +210,7 @@ def main():
         textposition='auto', yaxis='y1'
     ))
 
-    # Trục Y2 (Phải): Đường thanh khoản màu vàng rực nổi bật
+    # Trục Y bên phải: Đường xu hướng thanh khoản khối lượng màu đỏ/vàng
     fig.add_trace(io_go.Scatter(
         x=df_dash['name'], y=df_dash['volume_ratio'],
         name='KL/TBKL21 (Lần)', mode='lines+markers',
@@ -221,7 +218,7 @@ def main():
         marker=dict(size=8, color='#d63384'), yaxis='y2'
     ))
 
-    # Cấu hình giao diện Dark Mode chuẩn TradingView
+    # Cấu hình Layout màu xám tối TradingView giống ảnh mẫu
     fig.update_layout(
         title=dict(text=f"Biểu đồ biến động giá và thanh khoản các ngành ({now_dt.strftime('%d-%m-%Y')})", x=0.5, font=dict(size=16, color="#ffffff")),
         paper_bgcolor='#212529', plot_bgcolor='#2b3035',
@@ -239,7 +236,7 @@ def main():
     html_table = df_table_show.to_html(classes='table table-dark table-hover table-striped table-bordered text-center', index=False, float_format=lambda x: f"{x:.2f}")
 
     df_idx = get_data_index()
-    html_idx = df_idx.to_html(classes='table table-dark table-bordered text-center table-striped', index=False) if not df_idx.empty else "<p>Không có dữ liệu chỉ số</p>"
+    html_idx = df_idx.to_html(classes='table table-dark table-bordered text-center table-striped', index=False) if not df_idx.empty else "<p>Không có dữ liệu</p>"
 
     full_html = f"""
     <!DOCTYPE html>
@@ -247,7 +244,7 @@ def main():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Dashboard Phân Tích Nhóm Ngành Toàn Diện</title>
+        <title>Dashboard Thống Kê Biến Động Nhóm Ngành</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
         <style>
             body {{ background-color: #121416; color: #ffffff; }}
@@ -285,7 +282,7 @@ def main():
     """
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-    print("=== HOÀN THÀNH: BIỂU ĐỒ SONG TRỤC ĐÃ ĐƯỢC TẠO XONG ===")
+    print("=== HOÀN THÀNH: BIỂU ĐỒ SONG TRỤC ĐÃ ĐƯỢC VẼ THÀNH CÔNG ===")
 
 if __name__ == "__main__":
     main()
