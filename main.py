@@ -59,7 +59,7 @@ def get_PE_PB_vnindex():
         url = 'https://s.cafef.vn/Ajax/PageNew/FinanceData/GetDataChartPE.ashx'
         r = requests.get(url, headers=head, timeout=15)
         data = pd.DataFrame([r.json()['Data']['NowDataFinance'], r.json()['Data']['PastDataFinance']]).T
-        data.columns = ['Hiện tại', 'Năm trước']
+        data.columns = ['Hiện tại', 'Năm trước']
         return data.apply(pd.to_numeric, errors='coerce').reindex(['PE', 'PB', 'ROA', 'ROE', 'MaketCap'])
     except Exception as e:
         print(f"Lỗi hàm get_PE_PB_vnindex: {e}")
@@ -132,12 +132,21 @@ def get_data_index():
                 print(f"Error fetching data for {key}: {e}")
                 data_frames[key] = pd.DataFrame()
         
+        # SỬA LỖI ĐOẠN NÀY: Dùng kiểm tra an toàn nâng cao tránh lỗi IndexError/KeyError
+        def safe_get_value(df_target, col_name):
+            if not df_target.empty and col_name in df_target.columns:
+                try:
+                    return round(float(df_target[col_name].iloc[0]), 2)
+                except:
+                    return 0
+            return 0
+
         list_data = [
-            ('VNINDEX', round(list(data_frames['vni']['total_value_traded'].values)[0], 2) if not data_frames['vni'].empty else 0),
-            ('VN30', round(list(data_frames['vn30']['total_value_traded'].values)[0], 2) if not data_frames['vn30'].empty else 0),
-            ('HNX', round(list(data_frames['hnx']['total_value_traded'].values)[0], 2) if not data_frames['hnx'].empty else 0),
-            ('HNX30', round(list(data_frames['hn30']['value'].values)[0], 2) if not data_frames['hn30'].empty else 0),
-            ('UPCOM', round(list(data_frames['upcom']['total_value_traded'].values)[0], 2) if not data_frames['upcom'].empty else 0)
+            ('VNINDEX', safe_get_value(data_frames.get('vni'), 'total_value_traded')),
+            ('VN30', safe_get_value(data_frames.get('vn30'), 'total_value_traded')),
+            ('HNX', safe_get_value(data_frames.get('hnx'), 'total_value_traded')),
+            ('HNX30', safe_get_value(data_frames.get('hn30'), 'value')),
+            ('UPCOM', safe_get_value(data_frames.get('upcom'), 'total_value_traded'))
         ]
         
         df_t = pd.DataFrame(list_data, columns=['name', 'value_2'])
@@ -149,7 +158,7 @@ def get_data_index():
         data = result_df[['name', 'change', 'index', 'percent', 'volume', 'value', 'value/value']]
         return data.set_index('name')
     except Exception as e:
-        print(f"Lỗi hàm get_data_index: {e}")
+        print(f"Lỗi hệ thống tại hàm get_data_index: {e}")
         return pd.DataFrame()
 
 # =====================================================================
