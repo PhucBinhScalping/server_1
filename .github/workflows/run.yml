@@ -4,7 +4,13 @@ on:
   push:
     branches: [ main ]
   schedule:
-    - cron: '30 8 * * 1-5' # Tự động chạy lúc 15:30 chiều từ Thứ 2 đến Thứ 6 (Giờ VN)
+    # 1. Chạy mỗi 10 phút, từ phút 15 đến phút 59 của giờ thứ 2 UTC (tức 9h15 - 9h59 sáng giờ VN)
+    - cron: '*/10 2 * * 1-5'
+    # 2. Chạy mỗi 10 phút, từ giờ thứ 3 đến giờ thứ 7 UTC (tức 10h00 - 14h50 chiều giờ VN)
+    - cron: '*/10 3-7 * * 1-5'
+    # 3. Chạy đúng vào lúc 8h00 UTC (tức chốt kết quả cuối cùng lúc 15h00 chiều giờ VN)
+    - cron: '0 8 * * 1-5'
+    
   workflow_dispatch: # Cho phép bạn bấm nút chạy thủ công bất kỳ lúc nào
 
 permissions:
@@ -36,6 +42,7 @@ jobs:
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add index.html
-        git diff-index --quiet HEAD || git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]"
+        # Thêm cả file Excel vào để lưu lại số liệu sau mỗi lần cào
+        git add index.html THONG_KE_VNINDEX_VN30.xlsm
+        git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]" || echo "Không có thay đổi gì để commit"
         git push
