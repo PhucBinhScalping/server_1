@@ -4,11 +4,8 @@ on:
   push:
     branches: [ main ]
   schedule:
-    # 1. Chạy mỗi 15 phút, từ phút 15 đến phút 59 của giờ thứ 2 UTC (tức 9h15 - 9h59 sáng giờ VN)
     - cron: '*/15 2 * * 1-5'
-    # 2. Chạy mỗi 15 phút, từ giờ thứ 3 đến giờ thứ 7 UTC (tức 10h00 - 14h59 chiều giờ VN)
     - cron: '*/15 3-7 * * 1-5'
-    # 3. Chạy đúng vào lúc 8h00 UTC (tức chốt kết quả cuối cùng lúc 15h00 chiều giờ VN)
     - cron: '0 8 * * 1-5'
     
   workflow_dispatch:
@@ -28,10 +25,17 @@ jobs:
       with:
         python-version: '3.10'
 
+    # BỔ SUNG: Cài đặt Chrome và các thư viện hệ thống cần thiết cho Selenium trên Linux
+    - name: Install Google Chrome & Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget curl unzip libxi6 libgconf-2-4 libnss3
+
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install openpyxl plotly pandas requests user_agent
+        # Thêm selenium vào nếu bạn đang gọi trực tiếp trong mã nguồn
+        pip install openpyxl plotly pandas requests user_agent selenium
 
     - name: Execute Python Script
       run: python main.py
@@ -41,10 +45,8 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-        # SỬ DỤNG -A ĐỂ TỰ ĐỘNG THÊM TẤT CẢ FILE THAY ĐỔI / FILE MỚI (BAO GỒM CẢ INDEX.HTML)
         git add -A
-        
-        # BẮT BUỘC SỬ DỤNG || EXIT 0 HOẶC || ECHO ĐỂ NẾU KHÔNG CÓ THAY ĐỔI THÌ WORKFLOW VẪN BÁO XANH MƯỢT MÀ
+        # Chạy commit, nếu không thay đổi gì thì bỏ qua một cách an toàn
         git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]" || exit 0
         
         git push
