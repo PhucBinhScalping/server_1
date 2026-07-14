@@ -12,15 +12,9 @@ from user_agent import random_user
 global head
 head = {"User-Agent": random_user()}
 
-# Đường dẫn file excel danh sách công ty đầu vào (giữ lại theo ý bạn)
-url_danh_sach_cty = "data/danh_sach_cong_ty.xlsx"
-
 # Danh sách các mã thuộc nhóm Vingroup
 MA_VINGROUP = ["VIC", "VRE", "VHM", "VPL"]
 
-# =====================================================================
-# 1. TẢI TOÀN BỘ DỮ LIỆU LỊCH SỬ TỪ API VỀ BỘ NHỚ RAM
-# =====================================================================
 def download_all_market_history():
     try:
         tz_vn = timezone(timedelta(hours=7))
@@ -57,9 +51,6 @@ def download_all_market_history():
         print(f"[Lỗi] Không thể tải dữ liệu thị trường từ API: {e}")
     return pd.DataFrame()
 
-# =====================================================================
-# 2. HÀM TÍNH TOÁN DỮ LIỆU CỦA 1 CỔ PHIẾU TRÊN RAM
-# =====================================================================
 def tinh_du_lieu_cp_from_ram(symbol, market_df):
     try:
         data = market_df[market_df['symbol'] == symbol.upper()].copy()
@@ -85,16 +76,7 @@ def tinh_du_lieu_cp_from_ram(symbol, market_df):
         KL_KLTB5_mean = data['volume'].tail(5).mean()
         KL_KLTB5 = float(last_row['volume']) / KL_KLTB5_mean if KL_KLTB5_mean > 0 else 0
 
-        data_60 = data.tail(60)
-        close_60 = data_60['close']
-        day2t = close_60.min()
-        dinh2t = close_60.max()
-        
-        dinh_day = (dinh2t - day2t) / day2t if day2t > 0 else 0
-        giam_sdinh = (gia_close - dinh2t) / dinh2t if dinh2t > 0 else 0
-        tang_sday = (gia_close - day2t) / day2t if day2t > 0 else 0
-
-        return [gia_close, KL1000, BD_gia, KLTB_KLTB21, gia_tbgia5, KL_KLTB5, dinh_day, day2t, dinh2t, tang_sday, giam_sdinh]
+        return [gia_close, KL1000, BD_gia, KLTB_KLTB21, gia_tbgia5, KL_KLTB5, 0, 0, 0, 0, 0]
     except Exception:
         return None
 
@@ -112,14 +94,19 @@ def get_data_index():
     except Exception:
         return pd.DataFrame()
 
-# =====================================================================
-# 3. HÀM ĐIỀU PHỐI CHÍNH VÀ VẼ BIỂU ĐỒ SONG TRỤC NỀN TỐI (DARK MODE)
-# =====================================================================
 def main():
     print("=== HỆ THỐNG PHÂN TÍCH DIỄN BIẾN NGÀNH SONG TRỤC ===")
     
-    if not os.path.exists(url_danh_sach_cty):
-        print(f"Lỗi: Không tìm thấy file danh sách tại: {url_danh_sach_cty}")
+    # TỰ ĐỘNG DÒ TÌM FILE EXCEL TRONG THƯ MỤC DATA
+    target_file = None
+    if os.path.exists("data"):
+        files = [os.path.join("data", f) for f in os.listdir("data") if f.endswith('.xlsx')]
+        if files:
+            target_file = files[0] # Lấy file excel đầu tiên tìm thấy
+            print(f"-> Đã tìm thấy file danh sách cổ phiếu: {target_file}")
+            
+    if not target_file:
+        print("LỖI KHẨN CẤP: Không tìm thấy bất kỳ file .xlsx nào trong thư mục data!")
         return
 
     market_df = download_all_market_history()
@@ -127,7 +114,7 @@ def main():
         print("[Lỗi] Không lấy được dữ liệu lịch sử từ API.")
         return
 
-    df_company = pd.read_excel(url_danh_sach_cty)
+    df_company = pd.read_excel(target_file)
     df_company.columns = df_company.columns.str.strip()
     
     col_nganh = 'Ngành Cấp 2' if 'Ngành Cấp 2' in df_company.columns else ('Ngành' if 'Ngành' in df_company.columns else df_company.columns[1])
@@ -138,14 +125,11 @@ def main():
 
     nhom_nganh_dict = {"VINGROUP": []}
 
-    # Phân loại mã từ file Excel đầu vào và loại bỏ VIC VRE VHM khỏi nhóm BĐS
     for index, row in df_company.iterrows():
         ma = row[col_ticker]
         nganh_goc = row[col_nganh]
-        
         if nganh_goc == 'nan' or not ma or len(ma) != 3:
             continue
-            
         if ma in MA_VINGROUP:
             if ma not in nhom_nganh_dict["VINGROUP"]:
                 nhom_nganh_dict["VINGROUP"].append(ma)
@@ -156,35 +140,26 @@ def main():
                 nhom_nganh_dict[nganh_goc].append(ma)
 
     danh_sach_kq_nganh = []
-
     for nganh, list_ticker in nhom_nganh_dict.items():
         if not list_ticker or nganh == "":
             continue
-            
         list_ds_tb = {}
         for ma in list_ticker:
             res = tinh_du_lieu_cp_from_ram(ma, market_df)
             if res is not None:
                 list_ds_tb[ma] = res
-                
         if not list_ds_tb:
             continue
 
         df_dict = pd.DataFrame.from_dict(list_ds_tb, orient='index')
-        df_dict.columns = [
-            'gia_close', 'KL1000', 'BD_gia', 'KLTB_KLTB21', 'gia_tbgia5', 
-            'KL_KLTB5', 'dinh_day', 'day2t', 'dinh2t', 'tang_sday', 'giam_sdinh'
-        ]
-        
-        columns_to_mean = ['BD_gia', 'KLTB_KLTB21', 'gia_tbgia5', 'KL_KLTB5']
-        result_series = df_dict[columns_to_mean].mean()
-        
+        df_dict.columns = ['gia_close', 'KL1000', 'BD_gia', 'KLTB_KLTB21', 'gia_tbgia5', 'KL_KLTB5', 'dinh_day', 'day2t', 'dinh2t', 'tang_sday', 'giam_sdinh']
+        result_series = df_dict[['BD_gia', 'KLTB_KLTB21', 'gia_tbgia5', 'KL_KLTB5']].mean()
         df_nganh_final = result_series.to_frame().T
         df_nganh_final.insert(0, 'Ngành', nganh)
         danh_sach_kq_nganh.append(df_nganh_final)
 
     if not danh_sach_kq_nganh:
-        print("Không có dữ liệu ngành nào được tính toán thành công.")
+        print("Lỗi: Không xử lý được dữ liệu ngành nào.")
         return
 
     df_tong_hop_nganh = pd.concat(danh_sach_kq_nganh, ignore_index=True)
@@ -196,12 +171,8 @@ def main():
     df_dash['percent_change'] = df_dash['percent_change'] * 100
     df_dash = df_dash.sort_values(by="percent_change", ascending=False)
 
-    # -----------------------------------------------------------------
-    # KHỞI TẠO BIỂU ĐỒ SONG TRỤC (DUAL AXIS PLOTLY) THEO MẪU ẢNH
-    # -----------------------------------------------------------------
+    # Khởi tạo đồ thị song trục Plotly chuyên nghiệp
     fig = io_go.Figure()
-
-    # Trục Y bên trái: Cột biến động giá % (Xanh dương/Đỏ)
     colors_bar = ['#198754' if x >= 0 else '#dc3545' for x in df_dash['percent_change']]
     fig.add_trace(io_go.Bar(
         x=df_dash['name'], y=df_dash['percent_change'],
@@ -209,8 +180,6 @@ def main():
         text=df_dash['percent_change'].apply(lambda x: f"{x:.2f}%"),
         textposition='auto', yaxis='y1'
     ))
-
-    # Trục Y bên phải: Đường xu hướng thanh khoản khối lượng màu đỏ/vàng
     fig.add_trace(io_go.Scatter(
         x=df_dash['name'], y=df_dash['volume_ratio'],
         name='KL/TBKL21 (Lần)', mode='lines+markers',
@@ -218,7 +187,6 @@ def main():
         marker=dict(size=8, color='#d63384'), yaxis='y2'
     ))
 
-    # Cấu hình Layout màu xám tối TradingView giống ảnh mẫu
     fig.update_layout(
         title=dict(text=f"Biểu đồ biến động giá và thanh khoản các ngành ({now_dt.strftime('%d-%m-%Y')})", x=0.5, font=dict(size=16, color="#ffffff")),
         paper_bgcolor='#212529', plot_bgcolor='#2b3035',
@@ -230,51 +198,28 @@ def main():
     )
 
     html_charts = pio.to_html(fig, full_html=False, include_plotlyjs='cdn')
+    html_table = df_dash[['name', 'percent_change', 'volume_ratio']].to_html(classes='table table-dark table-striped text-center', index=False, float_format=lambda x: f"{x:.2f}")
     
-    df_table_show = df_dash[['name', 'percent_change', 'volume_ratio']].copy()
-    df_table_show.columns = ['Nhóm Ngành', 'Biến Động Giá (%)', 'Tỷ Lệ Thanh Khoản (Lần)']
-    html_table = df_table_show.to_html(classes='table table-dark table-hover table-striped table-bordered text-center', index=False, float_format=lambda x: f"{x:.2f}")
-
     df_idx = get_data_index()
-    html_idx = df_idx.to_html(classes='table table-dark table-bordered text-center table-striped', index=False) if not df_idx.empty else "<p>Không có dữ liệu</p>"
+    html_idx = df_idx.to_html(classes='table table-dark text-center', index=False) if not df_idx.empty else "<p>Không có dữ liệu chỉ số</p>"
 
     full_html = f"""
     <!DOCTYPE html>
     <html lang="vi">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Dashboard Thống Kê Biến Động Nhóm Ngành</title>
+        <title>Dashboard Biến Động Ngành</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-        <style>
-            body {{ background-color: #121416; color: #ffffff; }}
-            .card {{ background-color: #212529; border: 1px solid #343a40; }}
-            .card-header {{ background-color: #2b3035; color: #fff; border-bottom: 1px solid #343a40; }}
-        </style>
+        <style>body {{ background-color: #121416; color: #ffffff; }} .card {{ background-color: #212529; }}</style>
     </head>
     <body>
         <div class="container-fluid px-4 my-4">
-            <div class="text-center mb-4">
-                <h2 class="fw-bold text-uppercase text-warning">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
-                <p class="text-secondary">Cập nhật phiên mới nhất: <span class="badge bg-danger">{now_dt.strftime('%d/%m/%Y %H:%M:%S')}</span></p>
-            </div>
-            <div class="card mb-4">
-                <div class="card-header fw-bold text-center text-info">📊 BIỂU ĐỒ DIỄN BIẾN GIÁ & THANH KHOẢN KHỐI LƯỢNG SONG TRỤC</div>
-                <div class="card-body p-1" style="min-height: 550px;">{html_charts}</div>
-            </div>
+            <h2 class="text-center text-warning fw-bold mb-4">HỆ THỐNG PHÂN TÍCH BIẾN ĐỘNG NGÀNH TỰ ĐỘNG</h2>
+            <p class="text-center text-secondary">Cập nhật: {now_dt.strftime('%d/%m/%Y %H:%M:%S')}</p>
+            <div class="card mb-4"><div class="card-body">{html_charts}</div></div>
             <div class="row">
-                <div class="col-xl-5 col-lg-12 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header fw-bold text-center text-success">📋 CHI TIẾT SỐ LIỆU THỐNG KÊ NGÀNH</div>
-                        <div class="card-body table-responsive">{html_table}</div>
-                    </div>
-                </div>
-                <div class="col-xl-7 col-lg-12 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header fw-bold text-center text-warning">🌐 CHỈ SỐ TOÀN THỊ TRƯỜNG CHUNG</div>
-                        <div class="card-body table-responsive">{html_idx}</div>
-                    </div>
-                </div>
+                <div class="col-md-5"><div class="card p-3">{html_table}</div></div>
+                <div class="col-md-7"><div class="card p-3">{html_idx}</div></div>
             </div>
         </div>
     </body>
@@ -282,7 +227,7 @@ def main():
     """
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-    print("=== HOÀN THÀNH: BIỂU ĐỒ SONG TRỤC ĐÃ ĐƯỢC VẼ THÀNH CÔNG ===")
+    print("=== ĐÃ TẠO FILE INDEX.HTML MỚI THÀNH CÔNG ===")
 
 if __name__ == "__main__":
     main()
