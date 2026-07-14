@@ -34,7 +34,7 @@ def download_all_market_history():
         fdate = fromdate.strftime('%Y-%m-%d')
 
         log(f"Bắt đầu tải dữ liệu lịch sử từ API (150 ngày gần nhất, từ ngày: {fdate})...")
-        url = f"https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:{fdate}&size=100000&page=1"
+        url = f"https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:{fdate}&size=100000&page=1"
         r = requests.get(url, headers=head, timeout=30)
         
         log(f"Kết quả phản hồi từ API: Status Code = {r.status_code}")
