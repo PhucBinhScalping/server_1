@@ -33,7 +33,7 @@ def get_data_index():
         return pd.DataFrame()
 
 # =====================================================================
-# HÀM LOGIC TÍNH TOÁN CỔ PHIẾU (Thay thế hàm xlwings cũ)
+# HÀM LOGIC TÍNH TOÁN CỔ PHIẾU
 # =====================================================================
 def tinh_du_lieu_cp(symbol):
     try:
@@ -73,6 +73,7 @@ def tinh_du_lieu_cp(symbol):
         giam_sdinh = (gia_close - dinh2t) / dinh2t if dinh2t > 0 else 0
         tang_sday = (gia_close - day2t) / day2t if day2t > 0 else 0
 
+        # Trả về một list đúng thứ tự các cột
         return [gia_close, KL1000, BD_gia, KLTB_KLTB21, gia_tbgia5, KL_KLTB5, dinh_day, day2t, dinh2t, tang_sday, giam_sdinh]
     except:
         return None
@@ -84,7 +85,7 @@ def main():
     print("=== BẮT ĐẦU ĐỌC VÀ CẬP NHẬT FILE EXCEL THONG_KE_VNINDEX_VN30.xlsm ===")
     file_path = "THONG_KE_VNINDEX_VN30.xlsm"
     
-    # Mở file Excel bằng openpyxl (đọc cả macro ngầm)
+    # Mở file Excel bằng openpyxl (giữ nguyên macro)
     wb = openpyxl.load_workbook(file_path, keep_vba=True)
     
     summary_data = []
@@ -116,7 +117,7 @@ def main():
         
         # Chạy hàm tính toán cho từng mã
         for row, sym in symbols:
-            if len(sym) != 3: # Chỉ xử lý mã cổ phiếu 3 ký tự hợp lệ
+            if len(sym) != 3: 
                 continue
                 
             res = tinh_du_lieu_cp(sym)
@@ -125,11 +126,14 @@ def main():
                 for col_idx, val in enumerate(res, start=2):
                     sheet.cell(row=row, column=col_idx, value=val)
                 
-                total_bd_gia += res[2]  # Biến động giá
-                total_kltb += res[3]    # KLTB/KLTB21
+                # SỬA LỖI TẠI ĐÂY: res là list, lấy theo chỉ mục index
+                # res[2] tương ứng với vị trí của 'Biến động giá'
+                # res[3] tương ứng với vị trí của 'KLTB_KLTB21'
+                total_bd_gia += res[2]  
+                total_kltb += res[3]    
                 count_valid += 1
             
-            # Nghỉ ngắn 0.15s tránh bị block IP khi quét nhiều mã
+            # Nghỉ ngắn tránh bị block IP
             time.sleep(0.15)
             
         # Tính toán giá trị trung bình ngành
@@ -145,8 +149,8 @@ def main():
     # 2. Ghi ngược dữ liệu trung bình ngành vào sheet Dashboard
     if "Dashboard" in wb.sheetnames and summary_data:
         dash_sheet = wb["Dashboard"]
-        # Giả định bảng tổng hợp ngành của bạn bắt đầu từ hàng số 3
-        # Xóa dữ liệu cũ ở cột ngành (Cột A, B, C) trước khi điền mới
+        
+        # Xóa dữ liệu cũ ở cột ngành (Cột A, B, C) trước khi điền mới (từ hàng 3 đến hàng 30)
         for r in range(3, 30):
             dash_sheet.cell(row=r, column=1, value=None)
             dash_sheet.cell(row=r, column=2, value=None)
@@ -154,7 +158,7 @@ def main():
             
         for idx, data in enumerate(summary_data, start=3):
             dash_sheet.cell(row=idx, column=1, value=data["Nhóm Ngành"])
-            dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) # Định dạng % trong Excel
+            dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) # Chia 100 để Excel tự format dạng %
             dash_sheet.cell(row=idx, column=3, value=data["Thanh khoản TB (Lần)"])
             
     # Lưu lại file Excel sau khi cập nhật toàn bộ số liệu mới
@@ -162,7 +166,7 @@ def main():
     print("=== ĐÃ CẬP NHẬT VÀ LƯU FILE EXCEL THÀNH CÔNG ===")
 
     # =====================================================================
-    # 3. ĐỒNG BỘ ĐỒ THỊ RA FILE WEB HTML (INDEX.HTML) ĐỂ XEM TRÊN GITHUB PAGES
+    # 3. ĐỒNG BỘ ĐỒ THỊ RA FILE WEB HTML (INDEX.HTML)
     # =====================================================================
     df_dash = pd.DataFrame(summary_data)
     html_charts = ""
