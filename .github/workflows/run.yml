@@ -9,8 +9,16 @@ on:
     - cron: '0 8 * * 1-5'
   workflow_dispatch:
 
+# Cấp toàn bộ quyền đọc/ghi nội dung và quyền triển khai website GitHub Pages
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+# Tránh tình trạng các tiến trình chạy đè lên nhau làm lỗi dữ liệu
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   run-script:
@@ -32,17 +40,33 @@ jobs:
     - name: Execute Python Script
       run: python main.py
 
+    # BƯỚC 1: Đẩy ngược file index.html mới về lại Kho lưu trữ GitHub (để lưu trữ lịch sử code)
     - name: Commit and Push Webpage
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-        # Chỉ thực hiện commit nếu file index.html thực sự tồn tại và có thay đổi mới
         if [ -f "index.html" ]; then
           git add index.html
+          # Nếu file không đổi (ví dụ: chạy vào ngày nghỉ), commit sẽ tự bỏ qua an toàn
           git commit -m "Cập nhật biểu đồ biến động giá và thanh khoản tự động [skip ci]" || exit 0
           git push
         else
-          echo "Cảnh báo: Không tìm thấy file index.html được tạo ra từ script Python."
+          echo "Lỗi: Không tìm thấy file index.html được sinh ra!"
           exit 1
         fi
+
+    # BƯỚC 2: Thiết lập môi trường Pages chuyên dụng
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    # BƯỚC 3: Đóng gói thư mục gốc (nơi chứa file index.html vừa tạo) thành Artifact để đưa lên hosting
+    - name: Upload Artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+
+    # BƯỚC 4: Kích hoạt triển khai trực tiếp lên tên miền phucbinhscalping.online
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
