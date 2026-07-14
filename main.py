@@ -7,45 +7,81 @@ import openpyxl
 import plotly.express as px
 import plotly.io as pio
 from user_agent import random_user
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-
-chrome_options = Options()
-chrome_options.add_argument("--headless") # Bắt buộc phải có trên GitHub Actions
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-gpu")
-
-# Nếu đoạn code cũ của bạn tự nhận diện hệ điều hành và gây lỗi,
-# bạn hãy tìm đến file `chromedrive_setup.py` hoặc chỉnh sửa trực tiếp 
-# bỏ qua phần check OS nếu đang chạy trên môi trường Linux/GitHub Actions.
-driver = webdriver.Chrome(options=chrome_options)
+from concurrent.futures import ThreadPoolExecutor
 
 # Khởi tạo User-Agent toàn cục để tránh bị chặn
 global head
 head = {"User-Agent": random_user()}
 
-def download_all_market_data():
-    """Lấy toàn bộ giá đóng cửa và biến động của tất cả mã trong 10 ngày gần nhất"""
+# =====================================================================
+# HÀM TÍNH TOÁN DỮ LIỆU CỔ PHIẾU GỐC CỦA BẠN (ĐÃ THÊM BẢO VỆ LỖI)
+# =====================================================================
+def tinh_du_lieu_cp(symbol):
     try:
+        # Thiết lập thời gian
         tz_vn = timezone(timedelta(hours=7))
         todate = datetime.now(tz_vn)
-        fromdate = todate - timedelta(days=10)
+        fromdate = todate - timedelta(days=200)
         fdate = fromdate.strftime('%Y-%m-%d')
+        tdate = todate.strftime('%Y-%m-%d')
 
-        url = f"https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:{fdate}&size=5000&page=1"
-        r = requests.get(url, headers=head, timeout=15)
-        if r.status_code == 200 and 'data' in r.json():
-            df = pd.DataFrame(r.json()['data'])
-            if df.empty:
-                return pd.DataFrame()
-            df = df.sort_values(by='date', ascending=False)
-            df = df.drop_duplicates(subset=['code'])
-            df.set_index('code', inplace=True)
-            return df
-    except Exception as e:
-        print(f"[Cảnh báo] Không thể tải dữ liệu thị trường hàng loạt: {e}")
-    return pd.DataFrame()
+        # API URL và header
+        url = f'https://finfo-api.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{fdate}~date:lte:{tdate}&size=100000&page=1' 
+        payload = {}
+
+        # Gọi API và chuyển đổi dữ liệu
+        r = requests.get(url, headers=head, data=payload, timeout=10)
+        if r.status_code != 200 or 'data' not in r.json() or len(r.json()['data']) == 0:
+            return None
+            
+        data = pd.DataFrame(r.json()['data'])
+
+        # Đổi tên cột cho dễ hiểu và thêm cột 'volumn'
+        data.rename(columns={
+            'nmVolume': 'KLGD Khớp lệnh',
+            'nmValue': 'GTGD Khớp lệnh',
+            'ptVolume': 'KLGD Thỏa thuận',
+            'ptValue': 'GTGD Thỏa thuận',
+            'change': 'tăng/giảm',
+            'pctChange': '% tăng/giảm'
+        }, inplace=True)
+
+        data['volumn'] = pd.to_numeric(data['KLGD Khớp lệnh'], errors='coerce').fillna(0) + pd.to_numeric(data['KLGD Thỏa thuận'], errors='coerce').fillna(0)
+
+        # Lấy các giá trị cần thiết từ DataFrame
+        first_row = data.iloc[0]
+        gia_close = pd.to_numeric(first_row['close'], errors='coerce')
+        KL1000 = pd.to_numeric(first_row['volumn'], errors='coerce') / 1000
+        BD_gia = pd.to_numeric(first_row['% tăng/giảm'], errors='coerce') / 100
+
+        # Tính toán các giá trị cần thiết
+        KLGD_KLTB21_mean = pd.to_numeric(data['volumn'].iloc[:22].mean(), errors='coerce')
+        KLTB_KLTB21 = pd.to_numeric(first_row['volumn'], errors='coerce') / KLGD_KLTB21_mean if KLGD_KLTB21_mean > 0 else 0
+
+        close_mean_5 = pd.to_numeric(data['close'].iloc[:6].mean(), errors='coerce')
+        close_mean_21 = pd.to_numeric(data['close'].iloc[:22].mean(), errors='coerce')
+        gia_tbgia5 = close_mean_5 / close_mean_21 if close_mean_21 > 0 else 0
+
+        KL_KLTB5_mean = pd.to_numeric(data['volumn'].iloc[:6].mean(), errors='coerce')
+        KL_KLTB5 = pd.to_numeric(first_row['volumn'], errors='coerce') / KL_KLTB5_mean if KL_KLTB5_mean > 0 else 0
+
+        # Tính đỉnh và đáy của 60 ngày đầu
+        close_60 = pd.to_numeric(data['close'].iloc[:60], errors='coerce')
+        day2t = close_60.min()
+        dinh2t = close_60.max()
+        dinh_day = (dinh2t - day2t) / day2t if day2t > 0 else 0
+        giam_sdinh = (gia_close - dinh2t) / dinh2t if dinh2t > 0 else 0
+        tang_sday = (gia_close - day2t) / day2t if day2t > 0 else 0
+
+        return [gia_close, KL1000, BD_gia, KLTB_KLTB21, gia_tbgia5, KL_KLTB5, dinh_day, day2t, dinh2t, tang_sday, giam_sdinh]
+    except Exception:
+        return None
+
+# Hàm bọc để chạy đa luồng
+def worker(task):
+    row, sym = task
+    res = tinh_du_lieu_cp(sym)
+    return row, sym, res
 
 def get_data_index():
     try:
@@ -61,105 +97,91 @@ def get_data_index():
     except Exception:
         return pd.DataFrame()
 
+# =====================================================================
+# TIẾN TRÌNH CHÍNH
+# =====================================================================
 def main():
-    print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU SIÊU TỐC ===")
+    print("=== BẮT ĐẦU TÍNH TOÁN THEO HÀM GỐC (ĐA LUỒNG TỐC ĐỘ CAO) ===")
     file_path = "THONG_KE_VNINDEX_VN30.xlsm"
     summary_data = []
     
-    # 1. ĐỌC VÀ XỬ LÝ EXCEL (BẢO VỆ BẰNG TRY-EXCEPT ĐỂ LUÔN CHẠY ĐẾN BƯỚC TẠO HTML)
     try:
         wb = openpyxl.load_workbook(file_path, keep_vba=True)
-        print("-> Đang tải bảng giá toàn thị trường từ VNDirect...")
-        market_df = download_all_market_data()
         
-        if market_df.empty:
-            print("[Cảnh báo] Bảng dữ liệu trống. Giữ nguyên giá cũ trong Excel.")
-        else:
-            print("-> Tải thành công! Bắt đầu ánh xạ vào Excel...")
-            for sheet_name in wb.sheetnames:
-                if sheet_name.lower() in ["dashboard", "index", "summary", "sheet1", "sheet2"]:
-                    continue
-                    
-                sheet = wb[sheet_name]
-                row_idx = 2
-                symbols = []
+        for sheet_name in wb.sheetnames:
+            if sheet_name.lower() in ["dashboard", "index", "summary", "sheet1", "sheet2"]:
+                continue
                 
-                while True:
-                    cell_val = sheet.cell(row=row_idx, column=1).value
-                    if cell_val is None:
-                        break
-                    symbols.append((row_idx, str(cell_val).strip().upper()))
-                    row_idx += 1
-                    
-                if not symbols:
-                    continue
-                    
-                total_bd_gia = 0.0
-                count_valid = 0
+            sheet = wb[sheet_name]
+            print(f"-> Đang tính toán nhóm ngành: {sheet_name}")
+            row_idx = 2
+            symbols = []
+            
+            while True:
+                cell_val = sheet.cell(row=row_idx, column=1).value
+                if cell_val is None:
+                    break
+                symbols.append((row_idx, str(cell_val).strip().upper()))
+                row_idx += 1
                 
-                for row, sym in symbols:
-                    if sym in market_df.index:
-                        try:
-                            row_data = market_df.loc[sym]
-                            if isinstance(row_data, pd.Series):
-                                if 'close' not in row_data or 'pctChange' not in row_data:
-                                    continue
-                                close_val = row_data['close']
-                                nm_vol_val = row_data.get('nmVolume', 0)
-                                pt_vol_val = row_data.get('ptVolume', 0)
-                                pct_change_val = row_data['pctChange']
-                            else:
-                                if 'close' not in row_data.columns or 'pctChange' not in row_data.columns:
-                                    continue
-                                close_val = row_data['close'].iloc[0]
-                                nm_vol_val = row_data['nmVolume'].iloc[0] if 'nmVolume' in row_data.columns else 0
-                                pt_vol_val = row_data['ptVolume'].iloc[0] if 'ptVolume' in row_data.columns else 0
-                                pct_change_val = row_data['pctChange'].iloc[0]
+            if not symbols:
+                continue
+                
+            total_bd_gia = 0.0
+            total_kltb = 0.0
+            count_valid = 0
+            
+            # Sử dụng đa luồng (5 workers để vừa nhanh vừa không bị nghẽn IP)
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                results = executor.map(worker, symbols)
+                
+            for row, sym, res in results:
+                if res is not None:
+                    try:
+                        # Ghi toàn bộ 11 giá trị tính được vào các cột tương ứng (B đến L)
+                        for col_idx, val in enumerate(res, start=2):
+                            sheet.cell(row=row, column=col_idx, value=val)
+                        
+                        total_bd_gia += float(res[2])  # Cột % tăng/giảm
+                        total_kltb += float(res[3])   # Cột KLTB_KLTB21
+                        count_valid += 1
+                    except Exception:
+                        pass
 
-                            gia_close = float(pd.to_numeric(close_val, errors='coerce'))
-                            nm_vol = float(pd.to_numeric(nm_vol_val, errors='coerce')) if pd.notna(nm_vol_val) else 0.0
-                            pt_vol = float(pd.to_numeric(pt_vol_val, errors='coerce')) if pd.notna(pt_vol_val) else 0.0
-                            kl_1000 = (nm_vol + pt_vol) / 1000
-                            bd_gia = float(pd.to_numeric(pct_change_val, errors='coerce') / 100) if pd.notna(pct_change_val) else 0.0
-                            
-                            sheet.cell(row=row, column=2, value=gia_close)
-                            sheet.cell(row=row, column=3, value=kl_1000)
-                            sheet.cell(row=row, column=4, value=bd_gia)
-                            
-                            total_bd_gia += bd_gia
-                            count_valid += 1
-                        except Exception:
-                            pass  
+            if count_valid > 0:
+                avg_bd = (total_bd_gia / count_valid) * 100
+                avg_kl = total_kltb / count_valid
+                summary_data.append({
+                    "Nhóm Ngành": sheet_name,
+                    "Biến động TB (%)": round(avg_bd, 2),
+                    "Thanh khoản TB (Lần)": round(avg_kl, 2)
+                })
+                print(f"   => Hoàn thành ngành {sheet_name}. Biến động TB: {round(avg_bd, 2)}%")
 
-                if count_valid > 0:
-                    avg_bd = (total_bd_gia / count_valid) * 100
-                    summary_data.append({
-                        "Nhóm Ngành": sheet_name,
-                        "Biến động TB (%)": round(avg_bd, 2),
-                        "Thanh khoản TB (Lần)": 1.0
-                    })
-
-            if "Dashboard" in wb.sheetnames and summary_data:
-                dash_sheet = wb["Dashboard"]
-                for r in range(3, 40):
-                    dash_sheet.cell(row=r, column=1, value=None)
-                    dash_sheet.cell(row=r, column=2, value=None)
-                    dash_sheet.cell(row=r, column=3, value=None)
-                    
-                for idx, data in enumerate(summary_data, start=3):
-                    dash_sheet.cell(row=idx, column=1, value=data["Nhóm Ngành"])
-                    dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) 
-                    dash_sheet.cell(row=idx, column=3, value=data["Thanh khoản TB (Lần)"])
-                    
-            wb.save(file_path)
-            print("=== ĐÃ LƯU EXCEL THÀNH CÔNG ===")
+        # Ghi kết quả tổng hợp vào Dashboard Excel
+        if "Dashboard" in wb.sheetnames and summary_data:
+            dash_sheet = wb["Dashboard"]
+            for r in range(3, 40):
+                dash_sheet.cell(row=r, column=1, value=None)
+                dash_sheet.cell(row=r, column=2, value=None)
+                dash_sheet.cell(row=r, column=3, value=None)
+                
+            for idx, data in enumerate(summary_data, start=3):
+                dash_sheet.cell(row=idx, column=1, value=data["Nhóm Ngành"])
+                dash_sheet.cell(row=idx, column=2, value=data["Biến động TB (%)"] / 100) 
+                dash_sheet.cell(row=idx, column=3, value=data["Thanh khoản TB (Lần)"])
+                
+        wb.save(file_path)
+        print("=== ĐÃ LƯU EXCEL THÀNH CÔNG ===")
     except Exception as e:
-        print(f"[Cảnh báo] Lỗi xử lý file Excel: {e}")
+        print(f"Lỗi xử lý file Excel: {e}")
 
-    # 2. BƯỚC BẮT BUỘC: LUÔN XUẤT FILE INDEX.HTML ĐỂ TRÁNH LỖI WORKFLOW
+    # =====================================================================
+    # XUẤT HTML ĐỂ VẼ BIỂU ĐỒ DIỄN BIẾN NGÀNH
+    # =====================================================================
     df_dash = pd.DataFrame(summary_data)
     html_charts = ""
-    html_table = "<p class='text-muted p-3'>Không có dữ liệu tổng hợp ngành tại thời điểm này.</p>"
+    html_table = "<p class='text-muted p-3'>Không có dữ liệu tổng hợp ngành.</p>"
     
     if not df_dash.empty:
         df_dash = df_dash.sort_values(by="Biến động TB (%)", ascending=False)
@@ -192,7 +214,7 @@ def main():
                 <p>Cập nhật lần cuối: <span class="badge bg-danger">{now_str}</span></p>
             </div>
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">📊 BIỂU ĐỒ DIỄN BIẾN</div>
+                <div class="card-header bg-primary text-white">📊 BIỂU ĐỒ DIỄN BIẾN CÁC NHÓM NGÀNH</div>
                 <div class="card-body">{html_charts if html_charts else "Chưa có biểu đồ."}</div>
             </div>
             <div class="row">
@@ -209,7 +231,7 @@ def main():
     """
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-    print("=== ĐÃ KHỞI TẠO FILE INDEX.HTML AN TOÀN ===")
+    print("=== ĐÃ TẠO FILE INDEX.HTML VỚI ĐẦY ĐỦ SỐ LIỆU BIỂU ĐỒ ===")
 
 if __name__ == "__main__":
     main()
