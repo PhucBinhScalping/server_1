@@ -3,19 +3,20 @@ import pandas as pd
 from datetime import date, datetime, timedelta
 import requests
 import time
-import json
 from user_agent import random_user
+import RStockvn as rpv
 from bs4 import BeautifulSoup
+import json
+import html5lib
 
-# Giả định bạn đã upload file RStockvn.py lên cùng thư mục trên GitHub
-import RStockvn as rpv  
-
-# Khởi tạo User-Agent ngẫu nhiên cho toàn bộ request
+# Khởi tạo User-Agent toàn cục
+global head
 head = {"User-Agent": random_user()}
 
 # =====================================================================
-# HÀM 1: Đấu thầu thị trường mở (SBV)
+# CÁC HÀM CÀO DỮ LIỆU GỐC CỦA BẠN (Đã sửa lỗi và bỏ xlwings)
 # =====================================================================
+
 def dau_thau_thi_truong_mo():
     try:
         url_2 = 'https://www.sbv.gov.vn/webcenter/portal/vi/menu/trangchu/hdtttt'
@@ -30,9 +31,6 @@ def dau_thau_thi_truong_mo():
         print(f"Lỗi hàm dau_thau_thi_truong_mo: {e}")
         return pd.DataFrame()
 
-# =====================================================================
-# HÀM 2: Giá vàng (24Money)
-# =====================================================================
 def gia_vang_24money():
     try:
         url = 'https://api-finance-t19.24hmoney.vn/v1/ios/world-stock/all?device_id=web1723350utptenhuf4a5wu7r8rvgjjohs1qjvbq8468116'
@@ -48,9 +46,6 @@ def gia_vang_24money():
         print(f"Lỗi hàm gia_vang_24money: {e}")
         return pd.DataFrame()
 
-# =====================================================================
-# HÀM 3: Chỉ số P/E, P/B VNINDEX (Cafef)
-# =====================================================================
 def get_PE_PB_vnindex():
     try:
         url = 'https://s.cafef.vn/Ajax/PageNew/FinanceData/GetDataChartPE.ashx'
@@ -62,9 +57,6 @@ def get_PE_PB_vnindex():
         print(f"Lỗi hàm get_PE_PB_vnindex: {e}")
         return pd.DataFrame()
 
-# =====================================================================
-# HÀM 4: Chỉ số chứng khoán thế giới (24Money)
-# =====================================================================
 def get_index_stock_world():
     try:
         url = 'https://api-finance-t19.24hmoney.vn/v1/ios/world-stock/all?device_id=web1723350utptenhuf4a5wu7r8rvgjjohs1qjvbq8468116'
@@ -76,9 +68,6 @@ def get_index_stock_world():
         print(f"Lỗi hàm get_index_stock_world: {e}")
         return pd.DataFrame()
 
-# =====================================================================
-# HÀM 5: Danh sách cổ phiếu VN30 (Cafef)
-# =====================================================================
 def get_data_cp_vn30():
     todate = datetime.now()
     N = 1
@@ -96,9 +85,6 @@ def get_data_cp_vn30():
             N += 1
     return pd.DataFrame()
 
-# =====================================================================
-# HÀM 6: Thống kê chỉ số các sàn VNINDEX, VN30, HNX, UPCOM...
-# =====================================================================
 def get_data_index():
     try:
         re_vni_url = requests.get('https://banggia.cafef.vn/stockhandler.ashx?index=true', headers=head, timeout=15)
@@ -138,12 +124,13 @@ def get_data_index():
                 print(f"Error fetching data for {key}: {e}")
                 data_frames[key] = pd.DataFrame()
         
+        # ĐÃ SỬA LỖI ĐOẠN NÀY BẰNG CÁCH BỌC HÀM list() ĐỂ HỢP LỆ VỚI PYTHON 3
         list_data = [
-            ('VNINDEX', round(data_frames['vni']['total_value_traded'].values[0], 2) if not data_frames['vni'].empty else 0),
-            ('VN30', round(data_frames['vn30']['total_value_traded'].values[0], 2) if not data_frames['vn30'].empty else 0),
-            ('HNX', round(data_frames['hnx']['total_value_traded'].values[0], 2) if not data_frames['hnx'].empty else 0),
-            ('HNX30', round(data_frames['hn30']['value'].values[0], 2) if not data_frames['hn30'].empty else 0),
-            ('UPCOM', round(data_frames['upcom']['total_value_traded'].values[0], 2) if not data_frames['upcom'].empty else 0)
+            ('VNINDEX', round(list(data_frames['vni']['total_value_traded'].values)[0], 2) if not data_frames['vni'].empty else 0),
+            ('VN30', round(list(data_frames['vn30']['total_value_traded'].values)[0], 2) if not data_frames['vn30'].empty else 0),
+            ('HNX', round(list(data_frames['hnx']['total_value_traded'].values)[0], 2) if not data_frames['hnx'].empty else 0),
+            ('HNX30', round(list(data_frames['hn30']['value'].values)[0], 2) if not data_frames['hn30'].empty else 0),
+            ('UPCOM', round(list(data_frames['upcom']['total_value_traded'].values)[0], 2) if not data_frames['upcom'].empty else 0)
         ]
         
         df_t = pd.DataFrame(list_data, columns=['name', 'value_2'])
@@ -159,7 +146,7 @@ def get_data_index():
         return pd.DataFrame()
 
 # =====================================================================
-# HÀM XỬ LÝ DỮ LIỆU CỔ PHIẾU CÁ THỂ VÀ THƯ VIỆN RSTOCKVN (rpv)
+# CÁC HÀM VỀ CỔ PHIẾU VÀ VĨ MÔ DÙNG THƯ VIỆN RSTOCKVN CỦA BẠN
 # =====================================================================
 def info_company(symbol):
     return rpv.get_info_cp(symbol)
@@ -224,9 +211,8 @@ def tinh_du_lieu_cp(symbol):
         giam_sdinh = (gia_close - dinh2t) / dinh2t
         tang_sday = (gia_close - day2t) / day2t
 
-        # Trả về dưới dạng Dictionary để dễ hiển thị
         return {
-            "Giá Close": gia_close, "KL / 1000": KL1000, "Biến động giá": BD_gia,
+            "Mã CP": symbol.upper(), "Giá Close": gia_close, "KL / 1000": KL1000, "Biến động giá": BD_gia,
             "KLTB/KLTB21": KLTB_KLTB21, "Giá/TB Giá 5": gia_tbgia5, "KL/KLTB5": KL_KLTB5,
             "Đỉnh Đáy 60 ngày": dinh_day, "Đáy 60 ngày": day2t, "Đỉnh 60 ngày": dinh2t,
             "Tăng so với Đáy": tang_sday, "Giảm so với Đỉnh": giam_sdinh
@@ -251,112 +237,147 @@ def get_price_historical_vnd(symbol, fromdate, todate):
         print(f"Lỗi lịch sử giá VNDirect: {e}")
         return pd.DataFrame()
 
+def list_company():
+    return rpv.list_company()
+
+def giao_dich_tu_doanh(fromdate, todate):
+    fromdate, todate = pd.to_datetime(fromdate, dayfirst=True), pd.to_datetime(todate, dayfirst=True)
+    return rpv.giao_dich_tu_doanh(fromdate, todate)
+
+def report_finance_vnd(symbol, type, year):
+    return rpv.report_finance_vnd(symbol, type, year)
+
+def nuoc_ngoai_mua_ban(tradecenter, fromdate, todate):
+    fromdate, todate = pd.to_datetime(fromdate, dayfirst=True), pd.to_datetime(todate, dayfirst=True)
+    return rpv.nuoc_ngoai_mua_ban(tradecenter, fromdate, todate)
+
+def rsi_vietstock(fromdate, todate):
+    fromdate, todate = pd.to_datetime(fromdate, dayfirst=True), pd.to_datetime(todate, dayfirst=True)
+    return rpv.rsi_vietstock(fromdate, todate)
+
+def macd_vietstock(fromdate, todate):
+    fromdate, todate = pd.to_datetime(fromdate, dayfirst=True), pd.to_datetime(todate, dayfirst=True)
+    return rpv.macd_vietstock(fromdate, todate)
+
+def solieu_XNK_vietstock(fromdate, todate):
+    fromdate, todate = pd.to_datetime(fromdate, dayfirst=True), pd.to_datetime(todate, dayfirst=True)
+    return rpv.solieu_XNK_vietstock(fromdate, todate)
+
+def solieu_FDI_vietstock(fromdate, todate):
+    fromdate, todate = pd.to_datetime(fromdate, dayfirst=True), pd.to_datetime(todate, dayfirst=True)
+    return rpv.solieu_FDI_vietstock(fromdate, todate)
+
+def tygia_vietstock(fromdate, todate):
+    fromdate, todate = pd.to_datetime(fromdate, dayfirst=True), pd.to_datetime(todate, dayfirst=True)
+    return rpv.tygia_vietstock(fromdate, todate)
+
+def solieu_tindung_vietstock(fromdate, todate):
+    fromdate, todate = pd.to_datetime(fromdate, dayfirst=True), pd.to_datetime(todate, dayfirst=True)
+    return rpv.solieu_tindung_vietstock(fromdate, todate)
+
+def solieu_GDP_vietstock(fromyear, fromQ, toyear, toQ):
+    return rpv.solieu_GDP_vietstock(int(fromyear), int(fromQ), int(toyear), int(toQ))
+
 # =====================================================================
-# HÀM MAIN: CHẠY ĐỒNG LOẠT VÀ TỰ ĐỘNG XUẤT RA WEBSITE HTML
+# HÀM ĐIỀU KHIỂN CHÍNH: TỰ ĐỘNG CHẠY VÀ SINH GIAO DIỆN WEB HTML
 # =====================================================================
 def main():
-    print("=== BẮT ĐẦU QUY TRÌNH CÀO DỮ LIỆU TỰ ĐỘNG ===")
+    print("=== BẮT ĐẦU QUY TRÌNH THỐNG KÊ DỮ LIỆU TỰ ĐỘNG ===")
     now_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-    # 1. Cào dữ liệu vĩ mô & Chỉ số chung
-    print("Đang lấy dữ liệu thị trường mở SBV...")
-    df_sbv = dau_thau_thi_truong_mo()
-    
-    print("Đang lấy giá vàng...")
-    df_vang = gia_vang_24money()
-    
-    print("Đang lấy chỉ số P/E VNINDEX...")
-    df_pe = get_PE_PB_vnindex()
-    
-    print("Đang lấy chỉ số thế giới...")
-    df_world = get_index_stock_world()
-    
-    print("Đang lấy chỉ số các sàn VN...")
+    # Gọi các hàm lấy dữ liệu chỉ số chính
     df_index = get_data_index()
+    df_pe = get_PE_PB_vnindex()
+    df_sbv = dau_thau_thi_truong_mo()
+    df_vang = gia_vang_24money()
+    df_world = get_index_stock_world()
 
-    # 2. Xử lý ví dụ một cổ phiếu cụ thể (Ví dụ: HPG)
-    print("Đang phân tích kỹ thuật cổ phiếu điểm nhấn (HPG)...")
-    dict_hpg = tinh_du_lieu_cp("HPG")
-    df_hpg = pd.DataFrame([dict_hpg]) if dict_hpg else pd.DataFrame()
+    # Phân tích thử nghiệm 3 mã cổ phiếu điểm nhấn làm mẫu hiển thị
+    list_ma = ["HPG", "SSI", "VNM"]
+    data_points = []
+    for ma in list_ma:
+        res = tinh_du_lieu_cp(ma)
+        if res:
+            data_points.append(res)
+    df_cp_analysis = pd.DataFrame(data_points) if data_points else pd.DataFrame()
 
-    # 3. Chuyển đổi toàn bộ các DataFrame thành bảng HTML mã hóa Bootstrap để hiển thị đẹp mắt
-    html_sbv = df_sbv.to_html(classes='table table-bordered table-hover text-center') if not df_sbv.empty else "<p class='text-danger'>Không có dữ liệu</p>"
-    html_vang = df_vang.to_html(classes='table table-striped table-hover') if not df_vang.empty else "<p class='text-danger'>Không có dữ liệu</p>"
-    html_pe = df_pe.to_html(classes='table table-bordered table-dark') if not df_pe.empty else "<p class='text-danger'>Không có dữ liệu</p>"
-    html_world = df_world.to_html(classes='table table-striped') if not df_world.empty else "<p class='text-danger'>Không có dữ liệu</p>"
-    html_index = df_index.to_html(classes='table table-bordered table-striped text-center table-info') if not df_index.empty else "<p class='text-danger'>Không có dữ liệu</p>"
-    html_hpg = df_hpg.to_html(classes='table table-striped text-center', index=False) if not df_hpg.empty else "<p class='text-danger'>Không có dữ liệu</p>"
+    # Chuyển đổi dữ liệu sang bảng dạng HTML đẹp mắt (Dùng Bootstrap class)
+    html_index = df_index.to_html(classes='table table-bordered table-striped text-center table-info') if not df_index.empty else "<p>Không có dữ liệu</p>"
+    html_pe = df_pe.to_html(classes='table table-bordered table-dark') if not df_pe.empty else "<p>Không có dữ liệu</p>"
+    html_sbv = df_sbv.to_html(classes='table table-bordered text-center table-success') if not df_sbv.empty else "<p>Không có dữ liệu</p>"
+    html_vang = df_vang.to_html(classes='table table-striped table-hover table-warning') if not df_vang.empty else "<p>Không có dữ liệu</p>"
+    html_world = df_world.to_html(classes='table table-striped table-secondary') if not df_world.empty else "<p>Không có dữ liệu</p>"
+    html_cp_analysis = df_cp_analysis.to_html(classes='table table-striped text-center table-light', index=False) if not df_cp_analysis.empty else "<p>Không có dữ liệu</p>"
 
-    # 4. Gom tất cả cấu trúc dữ liệu bảng vào trong Khung Giao Diện Web tĩnh công khai
+    # Xây dựng bộ khung giao diện trang web HTML
     full_html = f"""
     <!DOCTYPE html>
     <html lang="vi">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Thống kê Thị trường Chứng khoán VNINDEX - VN30</title>
+        <title>Hệ thống Thống kê Dữ liệu Chứng khoán</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
         <style>
-            body {{ background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
-            .card {{ margin-bottom: 25px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }}
-            .card-header {{ background-color: #0d6efd; color: white; font-weight: bold; }}
+            body {{ background-color: #f8f9fa; font-family: 'Segoe UI', Arial, sans-serif; }}
+            .card {{ border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }}
+            .card-header {{ font-weight: bold; font-size: 1.1rem; }}
         </style>
     </head>
     <body>
         <div class="container my-5">
             <div class="text-center mb-5">
-                <h1 class="display-5 text-primary fw-bold">HỆ THỐNG THỐNG KÊ THỊ TRƯỜNG CHỨNG KHOÁN TỰ ĐỘNG</h1>
-                <p class="text-muted fs-5">Cập nhật tự động định kỳ bởi GitHub Actions vào lúc: <span class="badge bg-secondary">{now_str}</span></p>
+                <h1 class="text-primary fw-bold">BÁO CÁO THỊ TRƯỜNG CHỨNG KHOÁN TỰ ĐỘNG</h1>
+                <p class="text-muted">Hệ thống vận hành ngầm bằng GitHub Actions | Cập nhật lúc: <span class="badge bg-dark">{now_str}</span></p>
             </div>
-            
+
             <div class="card">
-                <div class="card-header fs-5">1. Tổng quan các chỉ số thị trường Việt Nam</div>
+                <div class="card-header bg-primary text-white">1. Chỉ số tổng quan các Sàn Giao Dịch Việt Nam</div>
                 <div class="card-body table-responsive">{html_index}</div>
             </div>
 
             <div class="card">
-                <div class="card-header fs-5 bg-dark">2. Định giá P/E, P/B toàn thị trường VNINDEX</div>
+                <div class="card-header bg-dark text-white">2. Định giá P/E, P/B toàn bộ thị trường VNINDEX</div>
                 <div class="card-body table-responsive">{html_pe}</div>
             </div>
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-lg-6">
                     <div class="card">
-                        <div class="card-header bg-success">3. Đấu thầu thị trường mở (SBV)</div>
+                        <div class="card-header bg-success text-white">3. Đấu thầu thị trường mở (Ngân hàng Nhà nước SBV)</div>
                         <div class="card-body table-responsive">{html_sbv}</div>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-lg-6">
                     <div class="card">
-                        <div class="card-header bg-warning text-dark">4. Biến động giá vàng thế giới & trong nước</div>
+                        <div class="card-header bg-warning text-dark">4. Biến động giá vàng thế giới & trong nước (24hmoney)</div>
                         <div class="card-body table-responsive">{html_vang}</div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header bg-secondary">5. Chỉ số chứng khoán thế giới lớn</div>
+                <div class="card-header bg-secondary text-white">5. Chỉ số thị trường chứng khoán thế giới lớn</div>
                 <div class="card-body table-responsive">{html_world}</div>
             </div>
 
             <div class="card">
-                <div class="card-header bg-info text-dark">6. Bảng Phân Tích Kỹ Thuật Đỉnh Đáy Cổ Phiếu Điểm Nhấn (Mẫu: HPG)</div>
-                <div class="card-body table-responsive">{html_hpg}</div>
+                <div class="card-header bg-info text-dark">6. Bảng dữ liệu định lượng, Đỉnh/Đáy các cổ phiếu điểm nhấn (Mẫu: HPG, SSI, VNM)</div>
+                <div class="card-body table-responsive">{html_cp_analysis}</div>
             </div>
-            
+
             <footer class="text-center my-4 text-muted small">
-                Hệ thống vận hành hoàn toàn miễn phí trên nền tảng GitHub Pages & GitHub Actions.
+                Báo cáo tự động được lưu trữ hoàn toàn miễn phí trên nền tảng GitHub Pages.
             </footer>
         </div>
     </body>
     </html>
     """
 
-    # 5. Xuất trực tiếp file index.html ra môi trường máy ảo
+    # Ghi nội dung thành file trang web tĩnh index.html
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(full_html)
-        
-    print("=== HOÀN THÀNH QUY TRÌNH! ĐÃ TẠO FILE INDEX.HTML THÀNH CÔNG ===")
+    print("=== HOÀN THÀNH BÁO CÁO! ĐÃ XUẤT FILE INDEX.HTML ===")
 
 if __name__ == "__main__":
     main()
