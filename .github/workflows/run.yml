@@ -32,17 +32,19 @@ jobs:
     - name: Execute Python Script
       run: python main.py
 
+    - name: Check generated files
+      run: ls -la
+
     - name: Commit and Push Webpage
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
         
-        # Nếu file index.html được tạo ra, tự động commit đẩy lên repo để GitHub Pages tự build lại
         if [ -f "index.html" ]; then
           git add index.html
-          git commit -m "Cập nhật biểu đồ biến động giá và thanh khoản tự động [skip ci]" || exit 0
+          git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]" || exit 0
           git push
         else
-          echo "Cảnh báo: Không tìm thấy file index.html"
+          echo "LỖI: Script Python không tạo ra được file index.html!"
           exit 1
         fi
