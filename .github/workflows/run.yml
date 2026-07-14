@@ -27,13 +27,12 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-        cache: 'pip'
+        # ĐÃ BỎ DÒNG CACHE GÂY TREO MÁY ẢO Ở ĐÂY
 
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install openpyxl plotly
+        pip install openpyxl plotly pandas requests user_agent
 
     - name: Execute Python Script
       run: python main.py
