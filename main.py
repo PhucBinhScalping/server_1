@@ -13,7 +13,7 @@ global head
 head = {"User-Agent": random_user()}
 
 # =====================================================================
-# 1. TẢI TOÀN BỘ DỮ LIỆU THỊ TRƯỜNG TRONG 1 CÚ CLICK (TĂNG TỐC 100 LẦN)
+# 1. TẢI TOÀN BỘ DỮ LIỆU THỊ TRƯỜNG TRONG 1 CÚ CLICK
 # =====================================================================
 def download_all_market_data():
     """Lấy toàn bộ giá đóng cửa và biến động của tất cả mã trong phiên hôm nay"""
@@ -22,6 +22,8 @@ def download_all_market_data():
         r = requests.get(url, headers=head, timeout=15)
         if r.status_code == 200 and 'data' in r.json():
             df = pd.DataFrame(r.json()['data'])
+            if df.empty:
+                return pd.DataFrame()
             # Chỉ lấy phiên gần nhất của từng mã
             df = df.sort_values(by='date', ascending=False).drop_duplicates(subset=['code'])
             # Thiết lập mã cổ phiếu làm chỉ mục để tìm kiếm siêu tốc
@@ -46,7 +48,7 @@ def get_data_index():
         return pd.DataFrame()
 
 # =====================================================================
-# 2. TIẾN TRÌNH CHÍNH (XỬ LÝ TRONG BỘ NHỚ SIÊU TỐC)
+# 2. TIẾN TRÌNH CHÍNH (XỬ LÝ TRONG BỘ NHỚ SIÊU TỐC & AN TOÀN)
 # =====================================================================
 def main():
     print("=== BẮT ĐẦU ĐỒNG BỘ DỮ LIỆU SIÊU TỐC ===")
@@ -89,18 +91,36 @@ def main():
         total_bd_gia = 0.0
         count_valid = 0
         
-        # Tra cứu trực tiếp từ bảng dữ liệu đã tải sẵn thay vì gửi request liên tục
+        # Tra cứu trực tiếp từ bảng dữ liệu đã tải sẵn
         for row, sym in symbols:
             if sym in market_df.index:
                 try:
                     row_data = market_df.loc[sym]
                     
-                    # Trích xuất an toàn các giá trị
-                    gia_close = float(pd.to_numeric(row_data['close'], errors='coerce'))
-                    nm_vol = float(pd.to_numeric(row_data['nmVolume'], errors='coerce'))
-                    pt_vol = float(pd.to_numeric(row_data['ptVolume'], errors='coerce'))
+                    # KIỂM TRA AN TOÀN TRƯỚC KHI TRÍCH XUẤT (TRÁNH LỖI KEYERROR)
+                    # Nếu row_data là Series (chỉ có 1 dòng duy nhất cho 1 mã - chuẩn dữ liệu)
+                    if isinstance(row_data, pd.Series):
+                        if 'close' not in row_data or 'pctChange' not in row_data:
+                            continue
+                        close_val = row_data['close']
+                        nm_vol_val = row_data.get('nmVolume', 0)
+                        pt_vol_val = row_data.get('ptVolume', 0)
+                        pct_change_val = row_data['pctChange']
+                    else:
+                        # Trường hợp khẩn cấp nếu bị trùng lặp dữ liệu trả về dạng DataFrame
+                        if 'close' not in row_data.columns or 'pctChange' not in row_data.columns:
+                            continue
+                        close_val = row_data['close'].iloc[0]
+                        nm_vol_val = row_data['nmVolume'].iloc[0] if 'nmVolume' in row_data.columns else 0
+                        pt_vol_val = row_data['ptVolume'].iloc[0] if 'ptVolume' in row_data.columns else 0
+                        pct_change_val = row_data['pctChange'].iloc[0]
+
+                    # Ép kiểu dữ liệu an toàn
+                    gia_close = float(pd.to_numeric(close_val, errors='coerce'))
+                    nm_vol = float(pd.to_numeric(nm_vol_val, errors='coerce')) if pd.notna(nm_vol_val) else 0.0
+                    pt_vol = float(pd.to_numeric(pt_vol_val, errors='coerce')) if pd.notna(pt_vol_val) else 0.0
                     kl_1000 = (nm_vol + pt_vol) / 1000
-                    bd_gia = float(pd.to_numeric(row_data['pctChange'], errors='coerce') / 100)
+                    bd_gia = float(pd.to_numeric(pct_change_val, errors='coerce') / 100) if pd.notna(pct_change_val) else 0.0
                     
                     # Ghi nhanh dữ liệu vào Excel (Cột B, C, D)
                     sheet.cell(row=row, column=2, value=gia_close)
@@ -110,14 +130,14 @@ def main():
                     total_bd_gia += bd_gia
                     count_valid += 1
                 except Exception:
-                    pass
+                    pass  # Bỏ qua mã lỗi để tiếp tục mạch chạy của file Excel
 
         if count_valid > 0:
             avg_bd = (total_bd_gia / count_valid) * 100
             summary_data.append({
                 "Nhóm Ngành": sheet_name,
                 "Biến động TB (%)": round(avg_bd, 2),
-                "Thanh khoản TB (Lần)": 1.0  # Giá trị mặc định hoặc bỏ qua để tối ưu tốc độ
+                "Thanh khoản TB (Lần)": 1.0
             })
             print(f"   => Ngành {sheet_name} hoàn thành. Biến động TB: {round(avg_bd, 2)}%")
 
