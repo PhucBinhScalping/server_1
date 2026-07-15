@@ -14,11 +14,12 @@ HEAD = {"User-Agent": "Mozilla/5.0"}
 session = requests.Session()
 
 def tinh_du_lieu_cp(symbol):
-    # Cấu hình múi giờ Việt Nam
+    """Lấy dữ liệu trực tiếp từ API cho 1 mã cổ phiếu"""
     vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-    
-    # Lấy dữ liệu 60 ngày gần nhất để đảm bảo có đủ dữ liệu tính trung bình
+    day_now = datetime.now(vn_tz).strftime("%Y-%m-%d")
     ngay_start = (datetime.now(vn_tz) - timedelta(days=60)).strftime("%Y-%m-%d")
+    
+    # API lấy giá cổ phiếu
     url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_start}&size=100&page=1'
     
     try:
@@ -27,82 +28,78 @@ def tinh_du_lieu_cp(symbol):
         if not data: return None
         
         df = pd.DataFrame(data)
-        
-        # CHUYỂN ĐỔI VÀ SẮP XẾP NGÀY ĐỂ ĐẢM BẢO DÒNG CUỐI LÀ MỚI NHẤT
         df['date'] = pd.to_datetime(df['date'])
         df = df.sort_values(by='date', ascending=True)
         
-        # Dữ liệu ngày mới nhất
-        last_row = df.iloc[-1]
+        # Chỉ lấy dữ liệu ngày mới nhất để tính toán
+        df_today = df[df['date'].dt.strftime("%Y-%m-%d") == day_now]
+        if df_today.empty: return None
         
-        # Tính khối lượng TB 21 phiên
+        last = df_today.iloc[-1]
+        
+        # Tính TB 21 phiên trên toàn bộ dữ liệu
         df['volume'] = df['nmVolume'].fillna(0) + df['ptVolume'].fillna(0)
         KLTB21 = df['volume'].tail(21).mean()
         
-        volume_ratio = float(last_row['volume']) / KLTB21 if KLTB21 > 0 else 0
+        volume_ratio = float(last['volume']) / KLTB21 if KLTB21 > 0 else 0
         
-        # Trả về giá trị của phiên mới nhất
-        return [0, 0, float(last_row['pctChange']), volume_ratio]
-    except: 
+        return [float(last['pctChange']), volume_ratio]
+    except:
         return None
 
 def main():
-    df = pd.read_excel(FILE_DANH_SACH)
-    df.loc[df['Ticker'].isin(['VIC', 'VRE', 'VHM', 'VPL']), 'Ngành Cấp 2'] = 'Vingroup'
+    # 1. Đọc file Excel
+    df_config = pd.read_excel(FILE_DANH_SACH)
+    # Gom nhóm Vingroup
+    df_config.loc[df_config['Ticker'].isin(['VIC', 'VRE', 'VHM', 'VPL']), 'Ngành Cấp 2'] = 'Vingroup'
+    
     results = []
     
-    for nganh in df['Ngành Cấp 2'].unique():
+    # 2. Xử lý từng ngành
+    for nganh in df_config['Ngành Cấp 2'].unique():
         if pd.isna(nganh): continue
-        tickers = df[df['Ngành Cấp 2'] == nganh]['Ticker'].unique()
-        with ThreadPoolExecutor(max_workers=15) as executor:
+        tickers = df_config[df_config['Ngành Cấp 2'] == nganh]['Ticker'].unique()
+        
+        # Gọi API đa luồng để nhanh hơn
+        with ThreadPoolExecutor(max_workers=10) as executor:
             data_nganh = [x for x in list(executor.map(tinh_du_lieu_cp, tickers)) if x is not None]
+        
         if data_nganh:
             avg = np.mean(data_nganh, axis=0)
-            results.append({'name': nganh, 'percent_change': avg[2], 'volume_ratio': avg[3]})
+            results.append({'name': nganh, 'percent_change': avg[0], 'volume_ratio': avg[1]})
 
     df_final = pd.DataFrame(results)
     
-    # Vẽ biểu đồ tối ưu kích thước
+    # 3. Vẽ biểu đồ
     colors = ['#198754' if x >= 0 else '#dc3545' for x in df_final['percent_change']]
     fig = io_go.Figure()
     
-    # Cột biến động giá
     fig.add_trace(io_go.Bar(
-        x=df_final['name'], 
-        y=df_final['percent_change'], 
-        name='BĐ giá', 
-        marker_color=colors, 
-        text=[f'{x:.2f}%' for x in df_final['percent_change']]
+        x=df_final['name'], y=df_final['percent_change'], 
+        marker_color=colors, text=[f'{x:.2f}%' for x in df_final['percent_change']]
     ))
     
-    # Đường khối lượng
     fig.add_trace(io_go.Scatter(
-        x=df_final['name'], 
-        y=df_final['volume_ratio'], 
-        name='KL/TBKL21', 
-        yaxis='y2', 
-        line=dict(color='#FFD700', width=3), 
-        mode='lines+markers'
+        x=df_final['name'], y=df_final['volume_ratio'], 
+        yaxis='y2', line=dict(color='#FFD700', width=3), mode='lines+markers'
     ))
     
-    # Cập nhật thời gian theo múi giờ Việt Nam
     vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-    time_str = datetime.now(vn_tz).strftime('%d-%m-%Y %H:%M')
-    
     fig.update_layout(
-        title=f"Biểu đồ biến động giá các ngành - {time_str} (Giờ VN)",
-        paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white', size=14),
-        width=1100, height=600, margin=dict(l=50, r=50, t=80, b=150),
-        bargap=0.2, yaxis=dict(title='BĐ giá (%)', gridcolor='#555'),
-        yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right', gridcolor='#555'),
+        title=f"Biểu đồ biến động giá các ngành - {datetime.now(vn_tz).strftime('%d-%m-%Y %H:%M')}",
+        paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
+        width=1100, height=600, yaxis=dict(title='BĐ giá (%)'),
+        yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
         xaxis=dict(tickangle=-45)
     )
     
+    # 4. Ghi file
     chart_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read().replace('{{CHART_DIEN_BIEN}}', chart_html)
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
+    print("Đã cập nhật biểu đồ thành công!")
 
 if __name__ == "__main__":
     main()
