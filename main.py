@@ -13,8 +13,15 @@ OUTPUT_FILE = "index.html"
 HEAD = {"User-Agent": "Mozilla/5.0"}
 session = requests.Session()
 
+# ĐỊNH NGHĨA MÃ ĐẠI DIỆN CHO CÁC NGÀNH (Để con số khớp bảng giá)
+# Nếu không có trong dict này, nó sẽ dùng trung vị (median)
+MA_DAI_DIEN = {
+    'Vingroup': 'VIC',
+    'NGÂN HÀNG': 'VCB',
+    'BẤT ĐỘNG SẢN': 'VHM'
+}
+
 def tinh_du_lieu_cp(symbol):
-    """Chỉ tính toán đúng 2 chỉ số: BD_gia và KLTB_KLTB21"""
     vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
     day_end = datetime.now(vn_tz).strftime("%Y-%m-%d")
     ngay_start = (datetime.now(vn_tz) - timedelta(days=90)).strftime("%Y-%m-%d")
@@ -27,73 +34,69 @@ def tinh_du_lieu_cp(symbol):
         if not data: return None
         
         df = pd.DataFrame(data)
-        # Tính khối lượng
+        # Tính volume chuẩn
         df['volume'] = df['nmVolume'].fillna(0) + df['ptVolume'].fillna(0)
+        last_row = df.iloc[-1]
         
-        # Lấy giá trị phiên mới nhất
-        last = df.iloc[-1]
+        # ĐÚNG FORMAT BẠN YÊU CẦU
+        bd_gia = pd.to_numeric(last_row.get('pctChange'), errors='coerce')
         
-        # Chỉ số 1: Biến động giá (%)
-        bd_gia = float(last.get('pctChange', 0))
-        
-        # Chỉ số 2: Khối lượng / TB 21 phiên
+        # Tính KL/TB21
         KLTB21_mean = df['volume'].tail(21).mean()
-        kl_tb21 = float(last['volume']) / KLTB21_mean if KLTB21_mean > 0 else 0
+        kl_tb21 = (float(last_row['volume']) / KLTB21_mean) if KLTB21_mean > 0 else 0
         
-        return [bd_gia, kl_tb21]
-        
-    except Exception:
-        return None
+        return {'symbol': symbol, 'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
+    except: return None
 
 def main():
-    # 1. Đọc danh sách và xử lý Ticker
     df_config = pd.read_excel(FILE_DANH_SACH)
-    # Đảm bảo Ticker là dạng chuỗi sạch sẽ
     df_config['Ticker'] = df_config['Ticker'].astype(str).str.strip()
-    df_config.loc[df_config['Ticker'].isin(['VIC', 'VRE', 'VHM', 'VPL']), 'Ngành Cấp 2'] = 'Vingroup'
     
     results = []
-    
-    # 2. Xử lý theo ngành
     for nganh in df_config['Ngành Cấp 2'].unique():
         if pd.isna(nganh): continue
         tickers = df_config[df_config['Ngành Cấp 2'] == nganh]['Ticker'].unique()
         
         with ThreadPoolExecutor(max_workers=10) as executor:
-            data_nganh = [x for x in list(executor.map(tinh_du_lieu_cp, tickers)) if x is not None]
+            raw_data = list(executor.map(tinh_du_lieu_cp, tickers))
+            data_nganh = [x for x in raw_data if x is not None]
         
         if data_nganh:
-            # Lấy trung bình ngành cho 2 chỉ số này
-            avg = np.mean(data_nganh, axis=0)
-            results.append({'name': nganh, 'percent_change': avg[0], 'volume_ratio': avg[1]})
+            df_nganh = pd.DataFrame(data_nganh)
+            
+            # LOGIC ĐÚNG: Nếu có mã đại diện, lấy mã đó, không thì lấy trung vị
+            if nganh in MA_DAI_DIEN:
+                target_symbol = MA_DAI_DIEN[nganh]
+                row = df_nganh[df_nganh['symbol'] == target_symbol]
+                final_bd = row['bd_gia'].iloc[0] if not row.empty else df_nganh['bd_gia'].median()
+            else:
+                final_bd = df_nganh['bd_gia'].median()
+            
+            final_kl = df_nganh['kl_tb21'].mean()
+            results.append({'name': nganh, 'percent_change': final_bd, 'volume_ratio': final_kl})
 
     df_final = pd.DataFrame(results)
     
-    # 3. Vẽ biểu đồ tinh gọn
+    # Vẽ biểu đồ
     colors = ['#198754' if x >= 0 else '#dc3545' for x in df_final['percent_change']]
     
     fig = io_go.Figure()
-    # Bar chart Biến động giá
-    fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], name='BĐ giá', marker_color=colors))
-    # Line chart KL/TBKL21
-    fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], name='KL/TBKL21', yaxis='y2', line=dict(color='#FFD700', width=3), mode='lines+markers'))
+    fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors, texttemplate='%{y:.2f}%', textposition='auto'))
+    fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#FFD700', width=3)))
     
     fig.update_layout(
-        title=f"Biến động giá & Khối lượng ngành - {datetime.now().strftime('%d-%m-%Y')}",
+        title=f"Biểu đồ biến động giá ngành - {datetime.now().strftime('%d-%m-%Y')}",
         paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
-        yaxis=dict(title='BĐ giá (%)', gridcolor='#555'),
-        yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right', showgrid=False),
-        xaxis=dict(tickangle=-45, gridcolor='#555'),
+        yaxis=dict(title='BĐ giá (%)'), yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
         margin=dict(l=60, r=60, t=80, b=150)
     )
     
-    # 4. Lưu file
-    chart_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+    # Ghi file
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
-        html = f.read().replace('{{CHART_DIEN_BIEN}}', chart_html)
+        html = f.read().replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
-    print("Cập nhật biểu đồ thành công với 2 chỉ số!")
+    print("Đã update thành công!")
 
 if __name__ == "__main__":
     main()
