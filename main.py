@@ -1,81 +1,83 @@
 import pandas as pd
 import requests
-import os
 import plotly.graph_objects as io_go
 import plotly.io as pio
-from datetime import datetime, timedelta
+from datetime import datetime
 from user_agent import random_user
 
-# 1. Cấu hình ban đầu
+# Cấu hình
 head = {"User-Agent": random_user()}
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 
-def download_data():
-    """Tải dữ liệu toàn sàn để tránh bị chặn IP khi gọi từng mã"""
-    print("Đang tải dữ liệu toàn thị trường...")
-    # Lấy dữ liệu 30 ngày gần nhất
-    fdate = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
-    url = f"https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=date:gte:{fdate}&size=50000&page=1"
-    
+# 1. Hàm tính toán cho từng cổ phiếu
+def tinh_du_lieu_cp(symbol, ngay_moi_nhat, day_end, df_old):
+    url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_moi_nhat}~date:lte:{day_end}&size=100000&page=1'
     try:
-        r = requests.get(url, headers=head, timeout=60)
-        if r.status_code == 200:
-            df = pd.DataFrame(r.json().get('data', []))
-            df.rename(columns={'code': 'symbol', 'nmVolume': 'volume', 'pctChange': 'pctChange'}, inplace=True)
-            df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
-            df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
-            return df
-    except Exception as e:
-        print(f"Lỗi tải dữ liệu: {e}")
-    return pd.DataFrame()
-
-def main():
-    # 2. Tải và xử lý dữ liệu
-    market_df = download_data()
-    if market_df.empty:
-        print("Không có dữ liệu, kiểm tra lại kết nối!")
-        return
-
-    df_company = pd.read_excel(FILE_DANH_SACH)
-    
-    # 3. Tính toán dữ liệu ngành (gom nhóm)
-    results = []
-    for nganh, group in df_company.groupby('Ngành Cấp 2'):
-        symbols = group['Ticker'].astype(str).tolist()
-        data_nganh = market_df[market_df['symbol'].isin(symbols)]
+        r = requests.get(url, headers=head, timeout=30)
+        data = r.json().get('data', [])
+        if not data: return None
         
-        if not data_nganh.empty:
-            # Tính trung bình % thay đổi và trung bình khối lượng
-            pct_mean = data_nganh.groupby('symbol')['pctChange'].last().mean()
-            vol_mean = data_nganh.groupby('symbol')['volume'].last().mean() / 100000
-            results.append({'name': nganh, 'percent_change': pct_mean, 'volume_ratio': vol_mean})
+        df_new = pd.DataFrame(data)
+        df_new.rename(columns={'nmVolume': 'klgd_khop_lenh', 'ptVolume': 'klgd_thoa_thuan', 'pctChange': '+/-%'}, inplace=True)
+        df_new['volume'] = df_new['klgd_khop_lenh'] + df_new['klgd_thoa_thuan']
+        df_new['date'] = pd.to_datetime(df_new['date'], format='mixed', dayfirst=True)
+        
+        # Gộp và xử lý trùng lặp
+        df_updated = pd.concat([df_old, df_new]).drop_duplicates(subset=['date', 'close', 'volume'], keep='first')
+        last_row = df_updated.iloc[-1]
+        
+        # Tính toán các chỉ số
+        gia_close = float(last_row['close'])
+        BD_gia = float(last_row['+/-%'])
+        KLGD_KLTB21_mean = df_updated['volume'].tail(21).mean()
+        KLTB_KLTB21 = float(last_row['volume']) / KLGD_KLTB21_mean if KLGD_KLTB21_mean > 0 else 0
+        
+        return [gia_close, BD_gia, KLTB_KLTB21]
+    except:
+        return None
 
-    df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
-
-    # 4. Vẽ biểu đồ (Sửa lỗi titlefont)
-    fig = io_go.Figure()
+# 2. Hàm xử lý trung bình ngành
+def ham_tinh_tb_nganh(ten_nganh, list_ds_cp):
+    results = []
+    day_end = datetime.now().strftime("%Y-%m-%d")
     
-    # Bar cho biến động
+    for ma in list_ds_cp:
+        # Giả sử bạn có hàm load_database_old để lấy data cũ
+        df_ma = load_database_old(ma) 
+        if df_ma is not None:
+            ngay_moi_nhat = pd.to_datetime(df_ma['date'].iloc[-1]).strftime("%Y-%m-%d")
+            kq = tinh_du_lieu_cp(ma, ngay_moi_nhat, day_end, df_ma)
+            if kq: results.append(kq)
+    
+    if not results: return None
+    
+    df_temp = pd.DataFrame(results, columns=['gia', 'percent_change', 'volume_ratio'])
+    return pd.Series({'name': ten_nganh, 'percent_change': df_temp['percent_change'].mean(), 'volume_ratio': df_temp['volume_ratio'].mean()})
+
+# 3. Hàm chính và Vẽ biểu đồ
+def main():
+    # Giả sử danhsach_theo_nganh là dict đã load từ Excel
+    danh_sach_kq = []
+    for nganh, df_raw in danhsach_theo_nganh.items():
+        row = ham_tinh_tb_nganh(nganh, df_raw['Ticker'].tolist())
+        if row is not None: danh_sach_kq.append(row)
+    
+    df_final = pd.DataFrame(danh_sach_kq)
+    df_final['updated_at'] = datetime.now().strftime("%H:%M %d/%m/%Y")
+    
+    # Vẽ biểu đồ
     colors = ['#198754' if x >= 0 else '#dc3545' for x in df_final['percent_change']]
-    fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], name='Biến động (%)', marker_color=colors))
+    fig = io_go.Figure()
+    fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors))
+    fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#ffc107')))
     
-    # Line cho thanh khoản
-    fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], name='Thanh khoản', yaxis='y2', line=dict(color='#ffc107', width=3)))
-
     fig.update_layout(
-        title=dict(text="Phân tích diễn biến các ngành", font=dict(color="#ffffff")),
-        paper_bgcolor='#212529', plot_bgcolor='#2b3035',
-        yaxis=dict(title=dict(text="Biến động (%)", font=dict(color="#ffffff")), tickfont=dict(color="#ffffff")),
-        yaxis2=dict(title=dict(text="Thanh khoản (x100k)", font=dict(color="#ffffff")), tickfont=dict(color="#ffffff"), overlaying='y', side='right'),
-        legend=dict(font=dict(color="#ffffff"))
+        title=f"Phân tích các ngành (Cập nhật: {df_final['updated_at'].iloc[0]})",
+        paper_bgcolor='#212529', plot_bgcolor='#2b3035', font_color="white"
     )
-
-    # 5. Xuất ra file index.html
-    html_content = pio.to_html(fig, full_html=True)
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html_content)
     
-    print("Đã hoàn thành! Mở file index.html để xem biểu đồ.")
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(pio.to_html(fig, full_html=True))
 
 if __name__ == "__main__":
     main()
