@@ -1,5 +1,4 @@
 name: Auto Fetch Stock Data
-
 on:
   schedule:
     # 09:15 - 15:00 VN tương ứng UTC là 02:15 - 08:00
