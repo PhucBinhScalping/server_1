@@ -5,29 +5,23 @@ on:
     branches:
       - main
   schedule:
-    # 1. Phiên sáng (9:15 - 11:30 VN <=> 2:15 - 4:30 UTC), mỗi 15 phút từ thứ 2 đến thứ 6
+    # Phiên sáng
     - cron: '15,30,45 2 * * 1-5'
     - cron: '*/15 3 * * 1-5'
     - cron: '0,15,30 4 * * 1-5'
-
-    # 2. Phiên chiều (13:00 - 15:00 VN <=> 6:00 - 8:00 UTC), mỗi 15 phút từ thứ 2 đến thứ 6
+    # Phiên chiều
     - cron: '*/15 6-7 * * 1-5'
     - cron: '0 8 * * 1-5'
-
-    # 3. Chốt dữ liệu cuối phiên lúc 15:15 VN (8:15 UTC) để ghi nhận kết quả cuối cùng
+    # Chốt cuối phiên
     - cron: '15 8 * * 1-5'
-
-  workflow_dispatch: # Cho phép nhấn nút chạy thủ công bất cứ lúc nào
+  workflow_dispatch:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   run-script:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -46,39 +40,18 @@ jobs:
         run: |
           python main.py
 
-      - name: Check generated files
-        run: |
-          if [ ! -f index.html ]; then
-            echo "LỖI: Script Python không tạo ra được file index.html!"
-            exit 1
-          fi
-
       - name: Commit and Push Webpage
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Chỉ add file index.html
           git add index.html
           
-          # Kiểm tra nếu có thay đổi thì mới commit để tránh lỗi khi dữ liệu trùng nhau
+          # Kiểm tra nếu có thay đổi thì mới commit
           if git diff --staged --quiet; then
-            echo "Không có thay đổi nào trong file index.html."
+            echo "Không có thay đổi mới, bỏ qua commit."
           else
             git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]"
             git push origin main
           fi
-
-      - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-  deploy:
-    needs: run-script
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
