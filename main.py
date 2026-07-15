@@ -53,19 +53,23 @@ def main():
         with ThreadPoolExecutor(max_workers=10) as executor:
             data_nganh = [x for x in list(executor.map(tinh_du_lieu_cp, tickers)) if x is not None]
         
+        # Thay vì dùng .mean() hoặc .sum()/len() trực tiếp:
         if data_nganh:
             df_nganh = pd.DataFrame(data_nganh)
             
-            # Dùng MEDIAN thay vì MEAN để con số trung thực hơn với biến động chung
-            # Nếu kết quả ra số âm, biểu đồ sẽ tự động tô màu đỏ
-            final_bd = df_nganh['bd_gia'].median() 
-            final_kl = df_nganh['kl_tb21'].mean()
+            # 1. Loại bỏ các giá trị lỗi hoặc giá trị 0 không đáng tin cậy
+            df_clean = df_nganh[df_nganh['bd_gia'].abs() > 0.0001] 
             
-            results.append({
-                'name': nganh, 
-                'percent_change': final_bd, 
-                'volume_ratio': final_kl
-            })
+            if not df_clean.empty:
+                # 2. Tính thủ công theo ý bạn
+                final_bd = df_clean['bd_gia'].sum() / len(df_clean)
+                final_kl = df_clean['kl_tb21'].sum() / len(df_clean)
+                
+                results.append({
+                    'name': nganh, 
+                    'percent_change': final_bd, 
+                    'volume_ratio': final_kl
+                })
 
     df_final = pd.DataFrame(results)
     
