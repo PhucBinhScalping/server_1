@@ -44,7 +44,7 @@ def tinh_du_lieu_cp(symbol):
         bd_gia = pd.to_numeric(last['pctChange'], errors='coerce')
         
         # Tính KL/TB21
-        vol_mean_21 = pd.to_numeric(df['volume'].tail(22).mean(), errors='coerce')
+        vol_mean_21 = pd.to_numeric(df['volume'].tail(21).mean(), errors='coerce')
         kl_tb21 = pd.to_numeric(last['volume'] / vol_mean_21, errors='coerce') if vol_mean_21 > 0 else 0
         
         return {'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
