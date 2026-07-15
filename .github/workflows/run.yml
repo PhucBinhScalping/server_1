@@ -5,15 +5,11 @@ on:
     branches:
       - main
   schedule:
-    # Phiên sáng
+    # 02:15 UTC đến 08:00 UTC (tương đương 09:15 VN đến 15:00 VN)
+    # Cron: 'phút giờ ngày_trong_tháng tháng ngày_trong_tuần'
     - cron: '15,30,45 2 * * 1-5'
-    - cron: '*/15 3 * * 1-5'
-    - cron: '0,15,30 4 * * 1-5'
-    # Phiên chiều
-    - cron: '*/15 6-7 * * 1-5'
+    - cron: '0,15,30,45 3-7 * * 1-5'
     - cron: '0 8 * * 1-5'
-    # Chốt cuối phiên
-    - cron: '15 8 * * 1-5'
   workflow_dispatch:
 
 permissions:
