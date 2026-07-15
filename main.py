@@ -78,15 +78,30 @@ def main():
         return
         
     df_final = pd.DataFrame(results)
-    
-    # 3. Logic màu sắc chính xác: Chỉ xanh khi thực sự > 0.0001
+     
+    # Vẽ biểu đồ
     colors = ['#198754' if x > 0.0001 else '#dc3545' for x in df_final['percent_change']]
     
     fig = io_go.Figure()
-    fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], 
-                            marker_color=colors, texttemplate='%{y:.2f}%', textposition='outside'))
-    fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', 
-                                line=dict(color='#FFD700', width=3)))
+    
+    # Thêm tham số name="BĐ_giá" vào đây
+    fig.add_trace(io_go.Bar(
+        x=df_final['name'], 
+        y=df_final['percent_change'], 
+        marker_color=colors, 
+        name='BĐ_giá',  # <--- Thay đổi tại đây
+        texttemplate='%{y:.2f}%', 
+        textposition='outside'
+    ))
+    
+    # Thêm tham số name="KL/KLTB21" vào đây
+    fig.add_trace(io_go.Scatter(
+        x=df_final['name'], 
+        y=df_final['volume_ratio'], 
+        yaxis='y2', 
+        line=dict(color='#FFD700', width=3), 
+        name='KL/KLTB21' # <--- Thay đổi tại đây
+    ))
     
     fig.update_layout(
             title=f"Biến động ngành - {datetime.now().strftime('%d-%m-%Y')}", 
