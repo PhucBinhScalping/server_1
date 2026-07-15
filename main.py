@@ -41,11 +41,11 @@ def tinh_du_lieu_cp(symbol):
             return None
             
         last = df_today.iloc[-1]
-        bd_gia = last['pctChange']
+        bd_gia = pd.to_numeric(last['pctChange'], errors='coerce')
         
         # Tính KL/TB21
-        vol_mean_21 = df['volume'].tail(21).mean()
-        kl_tb21 = (last['volume'] / vol_mean_21) if vol_mean_21 > 0 else 0
+        vol_mean_21 = pd.to_numeric(df['volume'].tail(21).mean(), errors='coerce')
+        kl_tb21 = pd.to_numeric(last['volume'] / vol_mean_21, errors='coerce') if vol_mean_21 > 0 else 0
         
         return {'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
     except Exception as e:
