@@ -78,37 +78,39 @@ def main():
         return
         
     df_final = pd.DataFrame(results)
+    
+    # Tạo biến thời gian theo múi giờ Việt Nam
+    vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
      
     # Vẽ biểu đồ
     colors = ['#198754' if x > 0.0001 else '#dc3545' for x in df_final['percent_change']]
     
     fig = io_go.Figure()
     
-    # Thêm tham số name="BĐ_giá" vào đây
+    # Thêm tham số name="BĐ_giá"
     fig.add_trace(io_go.Bar(
         x=df_final['name'], 
         y=df_final['percent_change'], 
         marker_color=colors, 
-        name='BĐ_giá',  # <--- Thay đổi tại đây
+        name='BĐ_giá', 
         texttemplate='%{y:.2f}%', 
         textposition='outside'
     ))
     
-    # Thêm tham số name="KL/KLTB21" vào đây
+    # Thêm tham số name="KL/KLTB21"
     fig.add_trace(io_go.Scatter(
         x=df_final['name'], 
         y=df_final['volume_ratio'], 
         yaxis='y2', 
         line=dict(color='#FFD700', width=3), 
-        name='KL/KLTB21' # <--- Thay đổi tại đây
+        name='KL/KLTB21'
     ))
     
     fig.update_layout(
-            title=f"Biến động ngành - {datetime.now().strftime('%d-%m-%Y')}", 
+            title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y')}", 
             paper_bgcolor='#333333', 
             plot_bgcolor='#333333', 
             font=dict(color='white'),
-            # THÊM THUỘC TÍNH HEIGHT TẠI ĐÂY
             height=600, 
             yaxis=dict(title='BĐ giá (%)'), 
             yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
