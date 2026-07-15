@@ -35,39 +35,53 @@ def main():
         latest_60 = group_data.groupby('symbol').tail(60)
         last_session = latest_60.groupby('symbol').tail(1)
         clean_data = last_session[last_session['volume'] > 0]
-        
         if not clean_data.empty:
             results.append({'name': nhom, 'percent_change': clean_data['pctChange'].mean(), 'volume_ratio': clean_data['volume'].mean()/100000})
 
     df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
     
-    # Vẽ biểu đồ
+    # Tạo biểu đồ Plotly
     colors = ['#198754' if x >= 0 else '#dc3545' for x in df_final['percent_change']]
     fig = io_go.Figure()
     fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors))
     fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='yellow', width=2)))
-    
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'),
         yaxis=dict(gridcolor='#555'), yaxis2=dict(overlaying='y', side='right', gridcolor='#555'),
-        margin=dict(l=20, r=20, t=30, b=50)
+        margin=dict(l=20, r=20, t=30, b=50), height=400
     )
 
-    # TẠO FILE HTML VỚI GIAO DIỆN CAM ĐỎ
-    html_content = f"""
-    <html>
-    <body style="background: linear-gradient(135deg, #f39c12, #e74c3c); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
-        <div style="background-color: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 15px; width: 80%; height: 80%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            <h2 style="color: white; text-align: center;">Biến động ngành - {datetime.now().strftime('%d/%m/%Y')}</h2>
-            {fig.to_html(full_html=False, include_plotlyjs='cdn')}
+    # Chuyển biểu đồ thành mã HTML để nhúng
+    plot_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+    # Dùng cấu trúc HTML bạn đã cung cấp, thay phần <img> bằng biến plot_html
+    full_html = f"""
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <title>Diễn Biến Thị Trường</title>
+        <style>
+            body {{ background: linear-gradient(to right, #f9c851, #f15238); font-family: sans-serif; margin: 0; padding: 0; }}
+            .navbar {{ background: #002060; padding: 15px; color: white; text-align: center; font-weight: bold; }}
+            .container {{ max-width: 1000px; margin: 20px auto; background: rgba(255, 255, 255, 0.2); padding: 20px; border-radius: 20px; }}
+            .market-update-box {{ background: #333; padding: 10px; border-radius: 15px; }}
+        </style>
+    </head>
+    <body>
+        <div class="navbar">PHÚC BÌNH SCALPING - DIỄN BIẾN THỊ TRƯỜNG</div>
+        <div class="container">
+            <h2 style="color: white; text-align: center;">Cập nhật lúc: {datetime.now().strftime('%d/%m/%Y %H:%M')}</h2>
+            <div class="market-update-box">
+                {plot_html}
+            </div>
         </div>
     </body>
     </html>
     """
     
     with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html_content)
-    print("Đã tạo file index.html giao diện cam-đỏ!")
+        f.write(full_html)
 
 if __name__ == "__main__":
     main()
