@@ -27,8 +27,7 @@ def tinh_du_lieu_cp(symbol):
         
         df = pd.DataFrame(data)
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
-        df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + \
-                       pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
+        df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
         # 1. Lọc thanh khoản (TB 100 phiên > 100,000)
         volume_tb100 = df['volume'].tail(100).mean()
