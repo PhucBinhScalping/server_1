@@ -31,7 +31,7 @@ def tinh_du_lieu_cp(symbol):
         
         # --- LỌC THANH KHOẢN (ĐIỀU KIỆN MỚI) ---
         volume_tb100 = df['volume'].tail(100).mean()
-        if volume_tb100 <= 10000:
+        if volume_tb100 <= 100000:
             print(f"DEBUG: {symbol} bị loại (Volume TB100: {volume_tb100:,.0f})")
             return None
         # ---------------------------------------
@@ -84,7 +84,7 @@ def main():
     fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors, texttemplate='%{y:.2f}%', textposition='outside'))
     fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#FFD700', width=3)))
     
-    fig.update_layout(title="Biến động ngành (Lọc thanh khoản > 10,000)", 
+    fig.update_layout(title="Biến động ngành", 
                       paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
                       yaxis=dict(title='BĐ giá (%)'), yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'))
     
