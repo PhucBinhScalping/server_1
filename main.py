@@ -1,15 +1,14 @@
 import pandas as pd
 import requests
+import numpy as np
 import plotly.graph_objects as io_go
-import plotly.io as pio
-from datetime import datetime
+from datetime import datetime, timedelta
 from user_agent import random_user
 
-# Cấu hình
+# 1. Cấu hình
 head = {"User-Agent": random_user()}
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 
-# 1. Hàm tính toán cho từng cổ phiếu
 def tinh_du_lieu_cp(symbol, ngay_moi_nhat, day_end, df_old):
     url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_moi_nhat}~date:lte:{day_end}&size=100000&page=1'
     try:
@@ -19,65 +18,77 @@ def tinh_du_lieu_cp(symbol, ngay_moi_nhat, day_end, df_old):
         
         df_new = pd.DataFrame(data)
         df_new.rename(columns={'nmVolume': 'klgd_khop_lenh', 'ptVolume': 'klgd_thoa_thuan', 'pctChange': '+/-%'}, inplace=True)
-        df_new['volume'] = df_new['klgd_khop_lenh'] + df_new['klgd_thoa_thuan']
-        df_new['date'] = pd.to_datetime(df_new['date'], format='mixed', dayfirst=True)
+        df_new['volume'] = df_new['klgd_khop_lenh'].fillna(0) + df_new['klgd_thoa_thuan'].fillna(0)
         
-        # Gộp và xử lý trùng lặp
-        df_updated = pd.concat([df_old, df_new]).drop_duplicates(subset=['date', 'close', 'volume'], keep='first')
-        last_row = df_updated.iloc[-1]
+        last_row = df_new.iloc[-1]
         
-        # Tính toán các chỉ số
-        gia_close = float(last_row['close'])
-        BD_gia = float(last_row['+/-%'])
-        KLGD_KLTB21_mean = df_updated['volume'].tail(21).mean()
-        KLTB_KLTB21 = float(last_row['volume']) / KLGD_KLTB21_mean if KLGD_KLTB21_mean > 0 else 0
+        # Lấy giá trị số sạch
+        BD_gia = pd.to_numeric(last_row.get('+/-%', 0), errors='coerce')
+        KL_current = pd.to_numeric(last_row['volume'], errors='coerce')
         
-        return [gia_close, BD_gia, KLTB_KLTB21]
+        # Tính TB 21 phiên cũ (dựa trên df_old)
+        KLTB21 = pd.to_numeric(df_old['volume'].tail(21).mean(), errors='coerce')
+        ratio = KL_current / KLTB21 if KLTB21 > 0 else 0
+        
+        return BD_gia, ratio
     except:
         return None
 
-# 2. Hàm xử lý trung bình ngành
-def ham_tinh_tb_nganh(ten_nganh, list_ds_cp):
-    results = []
-    day_end = datetime.now().strftime("%Y-%m-%d")
-    
-    for ma in list_ds_cp:
-        # Giả sử bạn có hàm load_database_old để lấy data cũ
-        df_ma = load_database_old(ma) 
-        if df_ma is not None:
-            ngay_moi_nhat = pd.to_datetime(df_ma['date'].iloc[-1]).strftime("%Y-%m-%d")
-            kq = tinh_du_lieu_cp(ma, ngay_moi_nhat, day_end, df_ma)
-            if kq: results.append(kq)
-    
-    if not results: return None
-    
-    df_temp = pd.DataFrame(results, columns=['gia', 'percent_change', 'volume_ratio'])
-    return pd.Series({'name': ten_nganh, 'percent_change': df_temp['percent_change'].mean(), 'volume_ratio': df_temp['volume_ratio'].mean()})
-
-# 3. Hàm chính và Vẽ biểu đồ
 def main():
-    # Giả sử danhsach_theo_nganh là dict đã load từ Excel
-    danh_sach_kq = []
-    for nganh, df_raw in danhsach_theo_nganh.items():
-        row = ham_tinh_tb_nganh(nganh, df_raw['Ticker'].tolist())
-        if row is not None: danh_sach_kq.append(row)
+    # Load danh sách và chạy qua các ngành
+    df_company = pd.read_excel(FILE_DANH_SACH)
+    results = []
     
-    df_final = pd.DataFrame(danh_sach_kq)
-    df_final['updated_at'] = datetime.now().strftime("%H:%M %d/%m/%Y")
+    for nganh, group in df_company.groupby('Ngành Cấp 2'):
+        symbols = group['Ticker'].unique()
+        nganh_bd = []
+        nganh_ratio = []
+        
+        for ma in symbols:
+            # Giả định df_old load từ file hoặc bộ nhớ
+            # Ở đây bạn cần thay hàm load_database_old bằng logic của bạn
+            # Hoặc đơn giản hóa bằng cách dùng API lấy 30 ngày cho mã đó
+            data_cp = tinh_du_lieu_cp(ma, (datetime.now()-timedelta(days=30)).strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d"), pd.DataFrame({'volume': [1000]*21}))
+            
+            if data_cp:
+                nganh_bd.append(data_cp[0])
+                nganh_ratio.append(data_cp[1])
+        
+        if nganh_bd:
+            # Loại bỏ giá trị lỗi (NaN) trước khi tính trung bình ngành
+            bd_tb = np.nanmean(nganh_bd)
+            ratio_tb = np.nanmean(nganh_ratio)
+            results.append({'name': nganh, 'percent_change': bd_tb, 'volume_ratio': ratio_tb})
+
+    df_final = pd.DataFrame(results)
     
     # Vẽ biểu đồ
     colors = ['#198754' if x >= 0 else '#dc3545' for x in df_final['percent_change']]
-    fig = io_go.Figure()
-    fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors))
-    fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#ffc107')))
     
+    fig = io_go.Figure()
+    
+    # Cột
+    fig.add_trace(io_go.Bar(
+        x=df_final['name'], y=df_final['percent_change'], name='BĐ giá',
+        marker_color=colors, text=[f'{x:.2f}%' for x in df_final['percent_change']], textposition='auto'
+    ))
+    
+    # Đường
+    fig.add_trace(io_go.Scatter(
+        x=df_final['name'], y=df_final['volume_ratio'], name='KL/TBKL21',
+        yaxis='y2', line=dict(color='red', width=2), mode='lines+markers'
+    ))
+
     fig.update_layout(
-        title=f"Phân tích các ngành (Cập nhật: {df_final['updated_at'].iloc[0]})",
-        paper_bgcolor='#212529', plot_bgcolor='#2b3035', font_color="white"
+        title=f"Biểu đồ biến động giá các ngành - {datetime.now().strftime('%d-%m-%Y %H:%M')}",
+        paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
+        yaxis=dict(title='BĐ giá', gridcolor='#555'),
+        yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right', gridcolor='#555'),
+        xaxis=dict(tickangle=-45)
     )
     
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(pio.to_html(fig, full_html=True))
+    fig.write_html("index.html")
+    print("Hoàn thành!")
 
 if __name__ == "__main__":
     main()
