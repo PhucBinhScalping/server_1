@@ -32,7 +32,7 @@ def tinh_du_lieu_cp(symbol):
         
         # 1. Lọc thanh khoản (TB 100 phiên > 100,000)
         volume_tb100 = df['volume'].tail(100).mean()
-        if volume_tb100 <= 50000:
+        if volume_tb100 <= 10000:
             return None
 
         # 2. Lọc dữ liệu của ngày hôm nay (Bắt buộc)
@@ -88,9 +88,17 @@ def main():
     fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', 
                                 line=dict(color='#FFD700', width=3)))
     
-    fig.update_layout(title=f"Biến động ngành - {datetime.now().strftime('%d-%m-%Y')}", 
-                      paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
-                      yaxis=dict(title='BĐ giá (%)'), yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'))
+    fig.update_layout(
+            title=f"Biến động ngành - {datetime.now().strftime('%d-%m-%Y')}", 
+            paper_bgcolor='#333333', 
+            plot_bgcolor='#333333', 
+            font=dict(color='white'),
+            # THÊM THUỘC TÍNH HEIGHT TẠI ĐÂY
+            height=600, 
+            yaxis=dict(title='BĐ giá (%)'), 
+            yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
+            margin=dict(l=60, r=60, t=80, b=150)
+        )
     
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read().replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
