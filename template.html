@@ -5,20 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diễn Biến Thị Trường - Phúc Bình Scalping</title>
     <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
     <style>
-        /* --- GIỮ NGUYÊN TÔNG MÀU VÀ GIAO DIỆN TỪ TRANG CHỦ --- */
-        html {
-            scroll-behavior: smooth;
-        }
+        html { scroll-behavior: smooth; }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(to right, #f9c851, #f15238); /* Màu cam vàng đặc trưng */
+            background: linear-gradient(to right, #f9c851, #f15238);
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            box-sizing: border-box;
             color: #000000;
         }
 
@@ -28,179 +23,68 @@
             align-items: center;
             gap: 25px;
             padding: 20px 10px;
-            box-sizing: border-box;
             width: 100%;
+            box-sizing: border-box;
         }
 
-        /* --- THANH MENU ĐỒNG BỘ --- */
         .navbar {
-            position: sticky;
-            top: 0;
-            width: 100%;
-            background: #002060; 
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            padding: 15px 0;
-            box-sizing: border-box;
+            position: sticky; top: 0; width: 100%;
+            background: #002060; z-index: 1000;
+            padding: 15px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
         .navbar-container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: flex-start;
+            max-width: 1100px; margin: 0 auto; padding: 0 20px;
+            display: flex; justify-content: flex-start;
         }
 
-        .navbar-menu {
-            display: flex;
-            gap: 30px;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
+        .navbar-menu { display: flex; gap: 30px; list-style: none; margin: 0; padding: 0; }
+        .navbar-item a { color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; }
+        .navbar-item a:hover, .navbar-item.active a { color: #fff200; }
 
-        .navbar-item a {
-            color: #ffffff;
-            text-decoration: none;
-            font-size: 16px;
-            font-weight: bold;
-            transition: color 0.2s;
-        }
-
-        .navbar-item a:hover, .navbar-item.active a {
-            color: #fff200;
-        }
-
-        /* --- KHUNG CHỨA NỘI DUNG ĐĂNG ẢNH --- */
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             width: 100%;
             background: rgba(255, 255, 255, 0.15);
             padding: 30px 40px; 
             border-radius: 20px;
             backdrop-filter: blur(10px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            box-sizing: border-box;
             text-align: center;
+            box-sizing: border-box;
         }
 
-        .page-title {
-            font-size: 32px;
-            font-weight: bold;
-            color: #002060;
-            margin-top: 0;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-
-        .page-subtitle {
-            font-size: 16px;
-            font-weight: 500;
-            color: #ffffff;
-            margin-bottom: 30px;
-            background: rgba(0, 32, 96, 0.6);
-            display: inline-block;
-            padding: 8px 20px;
-            border-radius: 20px;
-        }
-
-        /* Khu vực hiển thị hình ảnh buổi trưa */
+        /* KHUNG CHỨA BIỂU ĐỒ - ĐÃ MỞ RỘNG */
         .market-update-box {
             background: #ffffff;
-            padding: 20px;
+            padding: 30px;
             border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            max-width: 800px;
+            max-width: 1200px;
+            width: 95%;
             margin: 0 auto 20px auto;
+            overflow-x: auto;
         }
 
-        .market-img {
+        .chart-container {
             width: 100%;
-            height: auto;
-            border-radius: 8px;
-            display: block;
-            margin: 0 auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        .update-time {
-            font-size: 15px;
-            font-weight: bold;
-            color: #666666;
-            margin-top: 15px;
-            display: block;
-        }
-
-        /* --- BUTTON NỔI (STICKY) --- */
-        .sticky-contact-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background-color: #002060;
-            color: #ffffff;
-            padding: 15px 25px;
-            border-radius: 40px;
-            font-size: 16px;
-            font-weight: bold;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            border: 2px solid #ffffff;
-            cursor: pointer;
-            z-index: 999;
             display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: transform 0.2s, background-color 0.2s;
-            animation: pulseAnimation 2s infinite;
+            justify-content: center;
         }
 
-        .sticky-contact-btn:hover { transform: scale(1.05); background-color: #00103a; }
+        /* NÚT LIÊN HỆ */
+        .sticky-contact-btn {
+            position: fixed; bottom: 30px; right: 30px;
+            background-color: #002060; color: #ffffff;
+            padding: 15px 25px; border-radius: 40px;
+            border: 2px solid #ffffff; cursor: pointer; z-index: 999;
+            font-weight: bold; animation: pulseAnimation 2s infinite;
+        }
 
         @keyframes pulseAnimation {
             0% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0.7); }
             70% { box-shadow: 0 0 0 15px rgba(0, 32, 96, 0); }
             100% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0); }
-        }
-
-        /* --- POP-UP MODAL LIÊN HỆ --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-box { background: #ffffff; padding: 25px; border-radius: 20px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.3); transform: scale(0.8); transition: transform 0.3s ease; position: relative; max-height: 90vh; overflow-y: auto; }
-        .modal-overlay.active .modal-box { transform: scale(1); }
-        .modal-box h3 { margin-top: 0; color: #002060; font-size: 22px; margin-bottom: 20px; }
-        
-        .form-group { margin-bottom: 15px; text-align: left; }
-        .form-group label { display: block; font-weight: bold; color: #002060; margin-bottom: 5px; font-size: 14px; }
-        .form-group input, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #cccccc; border-radius: 8px; font-size: 15px; box-sizing: border-box; font-family: inherit; }
-        .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #002060; box-shadow: 0 0 5px rgba(0, 32, 96, 0.2); }
-        
-        .btn-submit-form { background-color: #002060; color: #ffffff; width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.15); margin-bottom: 15px; }
-        .btn-close { background-color: #757575; color: #ffffff; font-size: 14px; padding: 8px 25px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-close:hover { background-color: #555555; }
-
-        @media (max-width: 768px) {
-            .navbar-container { justify-content: center; }
-            .navbar-menu { gap: 20px; }
-            .navbar-item a { font-size: 14px; }
-            .page-title { font-size: 24px; }
-            .container { padding: 20px; }
-            .sticky-contact-btn { bottom: 20px; right: 20px; padding: 12px 20px; font-size: 14px; }
         }
     </style>
 </head>
@@ -210,8 +94,8 @@
         <div class="navbar-container">
             <ul class="navbar-menu">
                 <li class="navbar-item"><a href="https://phucbinhscalping.online">Trang chủ</a></li>
-                <li class="navbar-item active"><a href="dien-bien-thi-truong.html">Diễn biến thị trường</a></li>
-                <li class="navbar-item"><a href="bieu-do-ky-thuat-du-phong.html" onclick="showSection('bieudo')">Biểu đồ kỹ thuật</a</li>
+                <li class="navbar-item active"><a href="#">Diễn biến thị trường</a></li>
+                <li class="navbar-item"><a href="bieu-do-ky-thuat-du-phong.html">Biểu đồ kỹ thuật</a></li>
                 <li class="navbar-item"><a href="tat-ca-bai-viet.html">Bài Viết</a></li>
             </ul>
         </div>
@@ -219,7 +103,6 @@
 
     <button class="sticky-contact-btn" id="openContactBtn">💬 Liên hệ tư vấn</button>
 
-            
     <div class="main-wrapper">
         <div class="container">
             <h1>📈 Diễn Biến Thị Trường</h1>
@@ -227,58 +110,7 @@
                 <div class="chart-container">{{CHART_DIEN_BIEN}}</div>
             </div>
         </div>
-
-    </div>
-    
-    <div class="modal-overlay" id="contactModal">
-        <div class="modal-box">
-            <h3>💬 Đăng Ký Tư Vấn</h3>
-            <form action="https://formspree.io/f/THAY_ID_FORM_TẠI_ĐÂY" method="POST">
-                <div class="form-group">
-                    <label for="name">Họ và Tên:</label>
-                    <input type="text" id="name" name="Họ Tên" placeholder="Nguyễn Văn A" required>
-                </div>
-                <div class="form-group">
-                    <label for="phone">Số điện thoại (Zalo):</label>
-                    <input type="tel" id="phone" name="Số Điện Thoại" placeholder="0901234568" required>
-                </div>
-                <div class="form-group">
-                    <label for="email">Địa chỉ Gmail:</label>
-                    <input type="email" id="email" name="Gmail" placeholder="name@gmail.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="message">Nội dung cần hỗ trợ:</label>
-                    <textarea id="message" name="Nội Dung Cần Tư Vấn" rows="3" placeholder="Ví dụ: Cài đặt phần mềm..." required></textarea>
-                </div>
-                <button type="submit" class="btn-submit-form">Gửi Thông Tin Cho AD</button>
-            </form>
-            <button class="btn-close" id="closeContactBtn">Đóng</button>
-        </div>
     </div>
 
-    <script>
-        const openContactBtn = document.getElementById('openContactBtn');
-        const closeContactBtn = document.getElementById('closeContactBtn');
-        const contactModal = document.getElementById('contactModal');
-
-        // Mở Form khi nhấn nút
-        openContactBtn.addEventListener('click', () => contactModal.classList.add('active'));
-        
-        // Đóng Form khi nhấn nút Đóng
-        closeContactBtn.addEventListener('click', () => contactModal.classList.remove('active'));
-        
-        // Đóng Form khi click ra ngoài vùng trắng
-        contactModal.addEventListener('click', (e) => { 
-            if (e.target === contactModal) contactModal.classList.remove('active'); 
-        });
-
-        // Tự động clear form sau khi gửi thành công
-        const contactForm = contactModal.querySelector('form');
-        if (contactForm) {
-            contactForm.addEventListener('submit', () => {
-                setTimeout(() => { contactForm.reset(); }, 100);
-            });
-        }
-    </script>
 </body>
 </html>
