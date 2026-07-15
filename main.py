@@ -22,11 +22,9 @@ MA_DAI_DIEN = {
 }
 
 def tinh_du_lieu_cp(symbol):
-    vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-    day_end = datetime.now(vn_tz).strftime("%Y-%m-%d")
-    ngay_start = (datetime.now(vn_tz) - timedelta(days=90)).strftime("%Y-%m-%d")
-    
-    url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_start}~date:lte:{day_end}&size=100&page=1'
+    # Sử dụng ngày cụ thể để ép API trả về dữ liệu đúng ngày hôm nay
+    today = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh')).strftime("%Y-%m-%d")
+    url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{today}&size=10&page=1'
     
     try:
         r = session.get(url, headers=HEAD, timeout=10)
@@ -34,18 +32,19 @@ def tinh_du_lieu_cp(symbol):
         if not data: return None
         
         df = pd.DataFrame(data)
-        # Tính volume chuẩn
-        df['volume'] = df['nmVolume'].fillna(0) + df['ptVolume'].fillna(0)
-        last_row = df.iloc[-1]
+        # Ép kiểu dữ liệu an toàn ngay từ đầu
+        df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
+        df['nmVolume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0)
+        df['ptVolume'] = pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        # ĐÚNG FORMAT BẠN YÊU CẦU
-        bd_gia = pd.to_numeric(last_row.get('pctChange'), errors='coerce')
+        # Chỉ lấy dữ liệu của ngày hôm nay
+        last_row = df[df['date'] == today].iloc[-1]
         
-        # Tính KL/TB21
-        KLTB21_mean = df['volume'].tail(21).mean()
-        kl_tb21 = (float(last_row['volume']) / KLTB21_mean) if KLTB21_mean > 0 else 0
-        
-        return {'symbol': symbol, 'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
+        return {
+            'symbol': symbol,
+            'bd_gia': last_row['pctChange'],
+            'volume': last_row['nmVolume'] + last_row['ptVolume']
+        }
     except: return None
 
 def main():
