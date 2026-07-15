@@ -55,11 +55,16 @@ def main():
         
         if data_nganh:
             df_nganh = pd.DataFrame(data_nganh)
-            # Tính trung bình cho ngành
+            
+            # Dùng MEDIAN thay vì MEAN để con số trung thực hơn với biến động chung
+            # Nếu kết quả ra số âm, biểu đồ sẽ tự động tô màu đỏ
+            final_bd = df_nganh['bd_gia'].median() 
+            final_kl = df_nganh['kl_tb21'].mean()
+            
             results.append({
                 'name': nganh, 
-                'percent_change': df_nganh['bd_gia'].mean(), 
-                'volume_ratio': df_nganh['kl_tb21'].mean()
+                'percent_change': final_bd, 
+                'volume_ratio': final_kl
             })
 
     df_final = pd.DataFrame(results)
