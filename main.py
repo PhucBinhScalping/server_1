@@ -5,7 +5,7 @@ import plotly.graph_objects as io_go
 from datetime import datetime, timedelta
 from user_agent import random_user
 
-# Cấu hình
+# Cấu hình để lấy dữ liệu
 head = {"User-Agent": random_user()}
 
 def get_market_data():
@@ -21,6 +21,7 @@ def get_market_data():
         return pd.DataFrame()
 
 def main():
+    # 1. Lấy và tính toán dữ liệu
     market_df = get_market_data()
     if market_df.empty: return
     
@@ -28,7 +29,6 @@ def main():
     vingroup_list = ['VIC', 'VHM', 'VRE', 'VPL']
     df_company['Nhom'] = df_company.apply(lambda row: 'VINGROUP' if row['Ticker'] in vingroup_list else row['Ngành Cấp 2'], axis=1)
 
-    # Tính toán dữ liệu
     results = []
     for nhom, group in df_company.groupby('Nhom'):
         symbols = group['Ticker'].unique()
@@ -41,30 +41,34 @@ def main():
 
     df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
     
-    # 1. Vẽ biểu đồ 1 (Diễn biến thị trường)
+    # 2. Vẽ biểu đồ Diễn biến thị trường (Chart 1)
     colors = ['#198754' if x >= 0 else '#dc3545' for x in df_final['percent_change']]
     fig1 = io_go.Figure()
     fig1.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors))
     fig1.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='yellow', width=2)))
     fig1.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'), margin=dict(l=20, r=20, t=30, b=50), height=400)
     
-    # 2. Vẽ biểu đồ 2 (Lãi suất - Ví dụ dùng dữ liệu fig1 hoặc logic riêng của bạn)
-    fig2 = fig1 # Bạn có thể thay bằng logic vẽ biểu đồ lãi suất thực tế của bạn tại đây
+    # 3. Vẽ biểu đồ Lãi suất (Chart 2 - Bạn có thể thay đổi logic ở đây)
+    fig2 = fig1 
     
+    # Chuyển đổi biểu đồ thành HTML để nhúng
     chart_html1 = fig1.to_html(full_html=False, include_plotlyjs='cdn')
     chart_html2 = fig2.to_html(full_html=False, include_plotlyjs='cdn')
 
-    # 3. Đọc template và thay thế
-    with open("template.html", "r", encoding="utf-8") as f:
-        template = f.read()
+    # 4. Đọc file template và thay thế
+    try:
+        with open("template.html", "r", encoding="utf-8") as f:
+            template = f.read()
 
-    final_html = template.replace("{{CHART_DIEN_BIEN}}", chart_html1)
-    final_html = final_html.replace("{{CHART_LAI_SUAT}}", chart_html2)
+        final_html = template.replace("{{CHART_DIEN_BIEN}}", chart_html1)
+        final_html = final_html.replace("{{CHART_LAI_SUAT}}", chart_html2)
 
-    # 4. Ghi file index.html
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(final_html)
-    print("Đã cập nhật xong index.html từ template!")
+        # 5. Ghi kết quả ra index.html
+        with open("index.html", "w", encoding="utf-8") as f:
+            f.write(final_html)
+        print("Đã tạo thành công index.html từ template!")
+    except Exception as e:
+        print(f"Lỗi khi tạo file: {e}")
 
 if __name__ == "__main__":
     main()
