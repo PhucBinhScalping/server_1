@@ -2,7 +2,8 @@ import pandas as pd
 import requests
 import numpy as np
 import plotly.graph_objects as io_go
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 from concurrent.futures import ThreadPoolExecutor
 
 # Cấu hình
@@ -13,20 +14,37 @@ HEAD = {"User-Agent": "Mozilla/5.0"}
 session = requests.Session()
 
 def tinh_du_lieu_cp(symbol):
-    day_end = datetime.now().strftime("%Y-%m-%d")
-    ngay_start = (datetime.now() - pd.Timedelta(days=120)).strftime("%Y-%m-%d")
-    url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_start}~date:lte:{day_end}&size=500&page=1'
+    # Cấu hình múi giờ Việt Nam
+    vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+    
+    # Lấy dữ liệu 60 ngày gần nhất để đảm bảo có đủ dữ liệu tính trung bình
+    ngay_start = (datetime.now(vn_tz) - timedelta(days=60)).strftime("%Y-%m-%d")
+    url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_start}&size=100&page=1'
+    
     try:
         r = session.get(url, headers=HEAD, timeout=10)
         data = r.json().get('data', [])
         if not data: return None
+        
         df = pd.DataFrame(data)
+        
+        # CHUYỂN ĐỔI VÀ SẮP XẾP NGÀY ĐỂ ĐẢM BẢO DÒNG CUỐI LÀ MỚI NHẤT
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values(by='date', ascending=True)
+        
+        # Dữ liệu ngày mới nhất
+        last_row = df.iloc[-1]
+        
+        # Tính khối lượng TB 21 phiên
         df['volume'] = df['nmVolume'].fillna(0) + df['ptVolume'].fillna(0)
-        df['close'] = pd.to_numeric(df['close'], errors='coerce')
-        last = df.iloc[-1]
         KLTB21 = df['volume'].tail(21).mean()
-        return [0, 0, float(last['pctChange']), float(last['volume']) / KLTB21 if KLTB21 > 0 else 0]
-    except: return None
+        
+        volume_ratio = float(last_row['volume']) / KLTB21 if KLTB21 > 0 else 0
+        
+        # Trả về giá trị của phiên mới nhất
+        return [0, 0, float(last_row['pctChange']), volume_ratio]
+    except: 
+        return None
 
 def main():
     df = pd.read_excel(FILE_DANH_SACH)
@@ -57,25 +75,28 @@ def main():
         text=[f'{x:.2f}%' for x in df_final['percent_change']]
     ))
     
-    # Đường khối lượng (Thay đổi màu tại đây)
+    # Đường khối lượng
     fig.add_trace(io_go.Scatter(
         x=df_final['name'], 
         y=df_final['volume_ratio'], 
         name='KL/TBKL21', 
         yaxis='y2', 
-        line=dict(color='#FFD700', width=3), # #FFD700 là màu vàng Gold, width=3 giúp đường đậm hơn
+        line=dict(color='#FFD700', width=3), 
         mode='lines+markers'
     ))
     
+    # Cập nhật thời gian theo múi giờ Việt Nam
+    vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+    time_str = datetime.now(vn_tz).strftime('%d-%m-%Y %H:%M')
+    
     fig.update_layout(
-        title=f"Biểu đồ biến động giá các ngành - {datetime.now().strftime('%d-%m-%Y %H:%M')}",
+        title=f"Biểu đồ biến động giá các ngành - {time_str} (Giờ VN)",
         paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white', size=14),
         width=1100, height=600, margin=dict(l=50, r=50, t=80, b=150),
         bargap=0.2, yaxis=dict(title='BĐ giá (%)', gridcolor='#555'),
         yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right', gridcolor='#555'),
         xaxis=dict(tickangle=-45)
     )
-    
     
     chart_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
