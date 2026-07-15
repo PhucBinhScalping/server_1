@@ -123,16 +123,51 @@
     <div class="modal-overlay" id="contactModal">
         <div class="modal-box">
             <h3>💬 Đăng Ký Tư Vấn</h3>
-            <form action="https://formspree.io/f/THAY_ID_FORM_TẠI_ĐÂY" method="POST">
-                <div class="form-group"><label>Họ Tên:</label><input type="text" name="name" required></div>
-                <div class="form-group"><label>Số điện thoại:</label><input type="tel" name="phone" required></div>
-                <button type="submit" class="btn-submit">Gửi Thông Tin</button>
+            <form action="https://formspree.io/f/xrewzpjl" method="POST">
+                <div class="form-group">
+                    <label for="name">Họ và Tên:</label>
+                    <input type="text" id="name" name="Họ Tên" placeholder="Nguyễn Văn A" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Số điện thoại (Zalo):</label>
+                    <input type="tel" id="phone" name="Số Điện Thoại" placeholder="0901234568" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Địa chỉ Gmail:</label>
+                    <input type="email" id="email" name="Gmail" placeholder="name@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">Nội dung cần hỗ trợ:</label>
+                    <textarea id="message" name="Nội Dung Cần Tư Vấn" rows="3" placeholder="Ví dụ: Cài đặt phần mềm..." required></textarea>
+                </div>
+                <button type="submit" class="btn-submit-form">Gửi Thông Tin Cho AD</button>
             </form>
-            <button onclick="document.getElementById('contactModal').style.display='none'" style="margin-top:10px; width:100%; border:none; background:none; cursor:pointer;">Đóng</button>
+            <button class="btn-close" id="closeContactBtn">Đóng</button>
         </div>
     </div>
+    
 
     <script>
+        function setup(btnId, closeId, modalId) {
+            const btn = document.getElementById(btnId);
+            const close = document.getElementById(closeId);
+            const modal = document.getElementById(modalId);
+            if(btn) btn.onclick = () => modal.classList.add('active');
+            if(close) close.onclick = () => modal.classList.remove('active');
+            
+            // SỬA ĐÚNG KHÚC NÀY: Lắng nghe sự kiện click riêng cho từng modal, tránh bị ghi đè sự kiện
+            if(modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('active');
+                    }
+                });
+            }
+        }
+        
+        setup('openContactBtn', 'closeContactBtn', 'contactModal');
+        setup('openCafeBtn', 'closeCafeBtn', 'cafeModal');
+        setup('openIdBtn', 'closeIdBtn', 'idModal');
         document.getElementById('openContactBtn').onclick = () => document.getElementById('contactModal').style.display = 'flex';
     </script>
 </body>
