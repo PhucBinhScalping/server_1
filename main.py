@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import pytz
 from concurrent.futures import ThreadPoolExecutor
 from update_index_only import get_world_index_html
-
+from update_index_only import get_gold_index_html
 # Cấu hình
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 TEMPLATE_FILE = "template.html"
@@ -123,9 +123,24 @@ def main():
         
     # Thay thế Chart
     html = html.replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
+    world_html = get_world_index_html()
+    gold_html = get_gold_index_html()
+    
+    market_tables_content = f"""
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 300px;">
+            <h3 style="text-align:center;">Thị trường Thế giới</h3>
+            {world_html}
+        </div>
+        <div style="flex: 1; min-width: 300px;">
+            <h3 style="text-align:center;">Giá Vàng</h3>
+            {gold_html}
+        </div>
+    </div>
+    """
     
     # Thay thế Bảng chỉ số thế giới
-    html = html.replace('{{TABLE_WORLD}}', get_world_index_html())
+    html = html.replace('{{TABLE_WORLD}}', market_tables_content)
     
     # Ghi đè ra file index.html
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
