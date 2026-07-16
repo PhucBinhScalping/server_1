@@ -53,6 +53,17 @@
 
         .chart-container { width: 100%; display: flex; justify-content: center; }
 
+        /* Style cho bảng */
+        .world-index-table, .gold-table {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        .world-index-table th, .gold-table th {
+            background-color: #f8f9fa; padding: 10px 5px; border-bottom: 2px solid #ddd;
+        }
+        .world-index-table td, .gold-table td {
+            padding: 10px 5px; text-align: center; border-bottom: 1px solid #eee;
+        }
+
         .sticky-contact-btn {
             position: fixed; bottom: 30px; right: 30px;
             background-color: #002060; color: #ffffff;
@@ -75,7 +86,6 @@
         .form-group { margin-bottom: 15px; }
         input, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
         
-        /* Đã sửa class btn-submit để khớp với HTML */
         .btn-submit { background: #002060; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; }
         .btn-close { background: #ccc; border: none; padding: 10px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
 
@@ -83,19 +93,6 @@
             0% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0.7); }
             70% { box-shadow: 0 0 0 15px rgba(0, 32, 96, 0); }
             100% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0); }
-        }
-        .world-index-table, .gold-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-        }
-        .world-index-table th, .gold-table th {
-            background-color: #f8f9fa;
-            padding: 8px;
-        }
-        .world-index-table td, .gold-table td {
-            padding: 8px;
-            text-align: center;
         }
     </style>
 </head>
@@ -121,7 +118,7 @@
                 <div class="chart-container">{{CHART_DIEN_BIEN}}</div>
             </div>
             
-            <h2 style="margin-top: 40px; color: #002060;">🌍 Chỉ Số Thế Giới</h2>
+            <h2 style="margin-top: 40px; color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
             <div id="world-table-container" class="market-update-box">
                 {{TABLE_WORLD}}
             </div>
@@ -159,22 +156,9 @@
         const openBtn = document.getElementById('openContactBtn');
         const closeBtn = document.getElementById('closeContactBtn');
 
-        // Mở modal
-        openBtn.addEventListener('click', () => {
-            modal.style.display = 'flex';
-        });
-
-        // Đóng modal bằng nút đóng
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-
-        // Đóng modal khi click ra vùng tối bên ngoài
-        window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
+        openBtn.addEventListener('click', () => { modal.style.display = 'flex'; });
+        closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+        window.addEventListener('click', (event) => { if (event.target === modal) { modal.style.display = 'none'; } });
     </script>
 </body>
 </html>
