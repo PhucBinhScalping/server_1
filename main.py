@@ -1,3 +1,5 @@
+from update_index_only import get_world_index_html
+from update_index_only import get_gold_index_html
 import pandas as pd
 import requests
 import numpy as np
@@ -5,8 +7,7 @@ import plotly.graph_objects as io_go
 from datetime import datetime, timedelta
 import pytz
 from concurrent.futures import ThreadPoolExecutor
-from update_index_only import get_world_index_html
-from update_index_only import get_gold_index_html
+
 # Cấu hình
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 TEMPLATE_FILE = "template.html"
@@ -31,7 +32,7 @@ def tinh_du_lieu_cp(symbol):
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        # 1. Lọc thanh khoản (TB 100 phiên > 10,000)
+        # 1. Lọc thanh khoản (TB 100 phiên > 100,000)
         volume_tb100 = df['volume'].tail(100).mean()
         if volume_tb100 <= 10000:
             return None
@@ -117,12 +118,10 @@ def main():
             yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
             margin=dict(l=60, r=60, t=80, b=150)
         )
-    # Đọc template và thay thế cả 2 placeholder
+    
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
-        html = f.read()
+        html = f.read().replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
         
-    # Thay thế Chart
-    html = html.replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
@@ -145,8 +144,7 @@ def main():
     # Ghi đè ra file index.html
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
-        
-    print("Cập nhật thành công cả Biểu đồ và Bảng thế giới!")
+    print("Cập nhật thành công!")
 
 if __name__ == "__main__":
     main()
