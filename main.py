@@ -5,6 +5,7 @@ import plotly.graph_objects as io_go
 from datetime import datetime, timedelta
 import pytz
 from concurrent.futures import ThreadPoolExecutor
+from update_index_only import get_world_index_html
 
 # Cấu hình
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
@@ -116,12 +117,21 @@ def main():
             yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
             margin=dict(l=60, r=60, t=80, b=150)
         )
-    
+    # Đọc template và thay thế cả 2 placeholder
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
-        html = f.read().replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
+        html = f.read()
+        
+    # Thay thế Chart
+    html = html.replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
+    
+    # Thay thế Bảng chỉ số thế giới
+    html = html.replace('{{TABLE_WORLD}}', get_world_index_html())
+    
+    # Ghi đè ra file index.html
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
-    print("Cập nhật thành công!")
+        
+    print("Cập nhật thành công cả Biểu đồ và Bảng thế giới!")
 
 if __name__ == "__main__":
     main()
