@@ -109,17 +109,17 @@ def main():
         title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
         paper_bgcolor='#333333', 
         plot_bgcolor='#333333', 
-        font=dict(color='white', size=10),
-        autosize=True,         
-        height=400,            
-        # Tăng margin bottom để chữ trục X không bị cắt mất
-        margin=dict(l=20, r=20, t=50, b=150), 
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
+        font=dict(color='white'),
+        autosize=True,         # Tự động co giãn
+        height=400,            # Giảm chiều cao xuống một chút cho vừa màn hình điện thoại
+        yaxis=dict(title='BĐ giá (%)'), 
+        yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
+        margin=dict(l=40, r=40, t=60, b=120), # Margin hẹp lại
+        legend=dict(orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5)
     )
     
-    # Bắt buộc phải có: tickangle=90 để tên ngành đứng dọc
-    # automargin=True sẽ tự động đẩy khung hình ra nếu chữ quá dài
-    fig.update_xaxes(tickangle=90, tickfont=dict(size=8), automargin=True)
+    # Xoay chữ trục X góc nhọn hơn hoặc dùng tickmode 'auto'
+    fig.update_xaxes(tickangle=60, tickfont=dict(size=10))
 
     # Đọc template
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
@@ -129,7 +129,7 @@ def main():
     chart_html = fig.to_html(
         full_html=False, 
         include_plotlyjs='cdn', 
-        config={'responsive': True, 'displayModeBar': False}
+        config={'responsive': True} # Kích hoạt tính năng tự resize
     )
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_html)
 
