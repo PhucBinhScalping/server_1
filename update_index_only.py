@@ -11,7 +11,10 @@ def get_world_index_html():
         r = requests.get(url, headers=head, timeout=10)
         data = r.json()['data']['world_stock']
         df = pd.DataFrame(data)[['name', 'last_price', 'change_price', 'change_percent']]
-        df = df[~df['name'].str.contains('Futures', case=False, na=False)]
+        df = df[~df['name'].str.contains('Futures', case=False, na=False)]    # Loại bỏ các dòng có chữ "Futures"
+        # Loại bỏ các mã cụ thể
+        remove_list = ['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)']
+        df = ~df['name'].isin(remove_list)
         
         html = '<table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
         for _, row in df.iterrows():
@@ -31,32 +34,22 @@ def get_world_index_html():
     except:
         return "Lỗi tải dữ liệu"
 
-def gia_vang_24money():
-    url = 'https://api-finance-t19.24hmoney.vn/v1/ios/world-stock/all?device_id=web1723350utptenhuf4a5wu7r8rvgjjohs1qjvbq8468116'
-    head = {"User-Agent": "Mozilla/5.0"}
-    r = requests.get(url, headers=head)
-    data = r.json()['data']['gold_price']
-    df = pd.DataFrame(data)[['Last', 'footer', 'Percent', 'change']]
-    # Xử lý dữ liệu
-    df['Percent'] = pd.to_numeric(df['Percent'].str.replace('%', '').str.replace(',', ''), errors='coerce')
-    return df
 
 def get_gold_index_html():
-    try:
-        df = gia_vang_24money()
-        html = '<table class="gold-table"><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
-        for _, row in df.iterrows():
-            color = 'green' if float(row['Percent']) >= 0 else 'red'
-            html += f"""<tr>
-                <td>{row['footer']}</td>
-                <td style='color:{color}'>{row['Last']}</td>
-                <td style='color:{color}'>{row['change']}</td>
-                <td style='color:{color}'>{row['Percent']}%</td>
-            </tr>"""
-        html += '</table>'
-        return html
-    except:
-        return "Lỗi tải dữ liệu vàng"
+    # BỎ TRY-EXCEPT để thấy lỗi thật
+    df = gia_vang_24money()
+    html = '<table class="gold-table"><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
+    for _, row in df.iterrows():
+        # Kiểm tra xem row['Percent'] có phải là số không
+        color = 'green' if float(row['Percent']) >= 0 else 'red'
+        html += f"""<tr>
+            <td>{row['footer']}</td>
+            <td style='color:{color}'>{row['Last']}</td>
+            <td style='color:{color}'>{row['change']}</td>
+            <td style='color:{color}'>{row['Percent']}%</td>
+        </tr>"""
+    html += '</table>'
+    return html
 
 def update_world_table():
     world_html = get_world_index_html()
