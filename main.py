@@ -33,7 +33,7 @@ def tinh_du_lieu_cp(symbol):
         
         # 1. Lọc thanh khoản (TB 100 phiên > 100,000)
         volume_tb100 = df['volume'].tail(100).mean()
-        if volume_tb100 <= 10000:
+        if volume_tb100 <= 100000:
             return None
 
         # 2. Lọc dữ liệu của ngày hôm nay (Bắt buộc)
@@ -105,22 +105,22 @@ def main():
         name='KL/KLTB21'
     ))
     
-    # Cập nhật Layout để tối ưu cho di động
     fig.update_layout(
         title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
         paper_bgcolor='#333333', 
         plot_bgcolor='#333333', 
         font=dict(color='white'),
-        autosize=True,         # Tự động co giãn
-        height=550,            # Chiều cao cố định vừa phải
+        autosize=False,        # Tắt tự động co giãn
+        width=800,             # Cố định chiều rộng 800px
+        height=500,            # Cố định chiều cao
         yaxis=dict(title='BĐ giá (%)'), 
         yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
-        margin=dict(l=40, r=40, t=80, b=100), # Margin hẹp hơn để tận dụng diện tích
+        margin=dict(l=60, r=60, t=80, b=150),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     
-    # Xoay tên ngành ở trục X để không bị chồng chéo trên màn hình nhỏ
-    fig.update_xaxes(tickangle=45)
+    # Xoay trục X để dễ đọc hơn trong không gian cố định
+    fig.update_xaxes(tickangle=30)
 
     # Đọc template
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
