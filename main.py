@@ -109,15 +109,17 @@ def main():
         title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
         paper_bgcolor='#333333', 
         plot_bgcolor='#333333', 
-        font=dict(color='white', size=11), # Giảm font chữ tổng thể xuống một chút
+        font=dict(color='white', size=10),
         autosize=True,         
-        height=400,            # Cố định chiều cao 400px để không bị dẹp
-        margin=dict(l=40, r=40, t=60, b=120), # Margin dưới lớn để chứa chữ ngành
-        legend=dict(orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5)
+        height=400,            
+        # Tăng margin bottom để chữ trục X không bị cắt mất
+        margin=dict(l=20, r=20, t=50, b=150), 
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5)
     )
     
-    # Quan trọng: Xoay chữ 90 độ và chỉnh font nhỏ để không tràn màn hình
-    fig.update_xaxes(tickangle=90, tickfont=dict(size=9))
+    # Bắt buộc phải có: tickangle=90 để tên ngành đứng dọc
+    # automargin=True sẽ tự động đẩy khung hình ra nếu chữ quá dài
+    fig.update_xaxes(tickangle=90, tickfont=dict(size=8), automargin=True)
 
     # Đọc template
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
