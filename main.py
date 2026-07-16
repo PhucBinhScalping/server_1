@@ -110,17 +110,16 @@ def main():
         paper_bgcolor='#333333', 
         plot_bgcolor='#333333', 
         font=dict(color='white'),
-        autosize=False,        # Tắt tự động co giãn
-        width=800,             # Cố định chiều rộng 800px
-        height=500,            # Cố định chiều cao
+        autosize=True,         # Tự động co giãn
+        height=400,            # Giảm chiều cao xuống một chút cho vừa màn hình điện thoại
         yaxis=dict(title='BĐ giá (%)'), 
         yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
-        margin=dict(l=60, r=60, t=80, b=150),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        margin=dict(l=40, r=40, t=60, b=120), # Margin hẹp lại
+        legend=dict(orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5)
     )
     
-    # Xoay trục X để dễ đọc hơn trong không gian cố định
-    fig.update_xaxes(tickangle=30)
+    # Xoay chữ trục X góc nhọn hơn hoặc dùng tickmode 'auto'
+    fig.update_xaxes(tickangle=60, tickfont=dict(size=10))
 
     # Đọc template
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
@@ -130,7 +129,7 @@ def main():
     chart_html = fig.to_html(
         full_html=False, 
         include_plotlyjs='cdn', 
-        config={'responsive': True, 'displayModeBar': False}
+        config={'responsive': True} # Kích hoạt tính năng tự resize
     )
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_html)
 
