@@ -33,7 +33,7 @@ def tinh_du_lieu_cp(symbol):
         
         # 1. Lọc thanh khoản (TB 100 phiên > 100,000)
         volume_tb100 = df['volume'].tail(100).mean()
-        if volume_tb100 <= 50000:
+        if volume_tb100 <= 100000:
             return None
 
         # 2. Lọc dữ liệu của ngày hôm nay (Bắt buộc)
@@ -110,16 +110,17 @@ def main():
         paper_bgcolor='#333333', 
         plot_bgcolor='#333333', 
         font=dict(color='white'),
-        autosize=True,         # Tự động co giãn
-        height=400,            # Giảm chiều cao xuống một chút cho vừa màn hình điện thoại
+        autosize=True,        # Tắt tự động co giãn
+        #width=800,             # Cố định chiều rộng 800px
+        #height=500,            # Cố định chiều cao
         yaxis=dict(title='BĐ giá (%)'), 
         yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
-        margin=dict(l=40, r=40, t=60, b=120), # Margin hẹp lại
-        legend=dict(orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5)
+        margin=dict(l=60, r=60, t=80, b=150),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
     
-    # Xoay chữ trục X góc nhọn hơn hoặc dùng tickmode 'auto'
-    fig.update_xaxes(tickangle=60, tickfont=dict(size=10))
+    # Xoay trục X để dễ đọc hơn trong không gian cố định
+    fig.update_xaxes(tickangle=30)
 
     # Đọc template
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
@@ -129,7 +130,7 @@ def main():
     chart_html = fig.to_html(
         full_html=False, 
         include_plotlyjs='cdn', 
-        config={'responsive': True} # Kích hoạt tính năng tự resize
+        config={'responsive': True, 'displayModeBar': False}
     )
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_html)
 
