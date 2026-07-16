@@ -34,22 +34,44 @@ def get_world_index_html():
     except:
         return "Lỗi tải dữ liệu"
 
-
 def get_gold_index_html():
-    # BỎ TRY-EXCEPT để thấy lỗi thật
-    df = gia_vang_24money()
-    html = '<table class="gold-table"><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
-    for _, row in df.iterrows():
-        # Kiểm tra xem row['Percent'] có phải là số không
-        color = 'green' if float(row['Percent']) >= 0 else 'red'
-        html += f"""<tr>
-            <td>{row['footer']}</td>
-            <td style='color:{color}'>{row['Last']}</td>
-            <td style='color:{color}'>{row['change']}</td>
-            <td style='color:{color}'>{row['Percent']}%</td>
-        </tr>"""
-    html += '</table>'
-    return html
+    url = 'https://api-finance-t19.24hmoney.vn/v1/ios/world-stock/all?device_id=web1723350utptenhuf4a5wu7r8rvgjjohs1qjvbq8468116'
+    head = {"User-Agent": "Mozilla/5.0"}
+    
+    try:
+        r = requests.get(url, headers=head, timeout=10)
+        data = r.json()['data']['gold_price']
+        
+        # Tạo DataFrame và xử lý trực tiếp
+        df = pd.DataFrame(data)
+        
+        # Xử lý các cột cần thiết
+        # Lưu ý: Không chia 100 nếu dữ liệu API đã ở dạng số phần trăm mong muốn
+        df['Percent_val'] = pd.to_numeric(df['Percent'].str.replace('%', '').str.replace(',', ''), errors='coerce')
+        df['Last_clean'] = df['Last'].str.replace('N', '').str.strip()
+        
+        html = '<table class="gold-table"><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
+        
+        for _, row in df.iterrows():
+            # Xác định màu dựa trên Percent_val
+            try:
+                pct = float(row['Percent_val'])
+                color = 'green' if pct >= 0 else 'red'
+            except:
+                color = 'black'
+            
+            html += f"""<tr>
+                <td>{row['footer']}</td>
+                <td style='color:{color}'>{row['Last_clean']}</td>
+                <td style='color:{color}'>{row['change']}</td>
+                <td style='color:{color}'>{row['Percent']}</td>
+            </tr>"""
+        
+        html += '</table>'
+        return html
+    except Exception as e:
+        return f"<p>Lỗi tải vàng: {e}</p>"
+        
 
 def update_world_table():
     world_html = get_world_index_html()
