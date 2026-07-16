@@ -52,7 +52,25 @@
         }
 
         .chart-container { width: 100%; display: flex; justify-content: center; }
-
+        /* Container giúp giữ biểu đồ không bị bóp méo */
+        .chart-wrapper {
+            width: 100%;
+            overflow-x: auto; /* Cho phép cuộn ngang trên mobile */
+            -webkit-overflow-scrolling: touch; /* Giúp cuộn mượt trên iOS */
+            padding-bottom: 10px;
+        }
+        
+        .chart-inner {
+            min-width: 800px; /* Ép biểu đồ luôn giữ chiều ngang ít nhất 800px */
+            display: flex;
+            justify-content: center;
+        }
+    
+        .chart-container { 
+            width: 100%; 
+            display: flex; 
+            justify-content: center; 
+        }
         /* Style cho bảng */
         .world-index-table, .gold-table {
             width: 100%; border-collapse: collapse; font-size: 13px;
@@ -120,7 +138,13 @@
         <div class="container">
             <h1>📈 Diễn Biến Thị Trường</h1>
             <div class="market-update-box">
-                <div class="chart-container">{{CHART_DIEN_BIEN}}</div>
+                <div class="chart-container">
+                    <div class="chart-wrapper">
+                        <div class="chart-inner">
+                            {{CHART_DIEN_BIEN}}
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <h2 style="margin-top: 40px; color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
