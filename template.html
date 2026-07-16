@@ -59,9 +59,16 @@
             justify-content: center;
         }
     
+        .chart-wrapper {
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden; /* Ngăn không cho cuộn ngang */
+        }
+        
         .js-plotly-plot {
             width: 100% !important;
-            height: auto !important;
+            /* Cho phép Plotly tự tính toán chiều cao dựa trên layout đã set ở trên */
+            height: 100% !important; 
         }
         /* ------------------------------------------- */
     
