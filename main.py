@@ -31,8 +31,8 @@ def tinh_du_lieu_cp(symbol):
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        # Lọc thanh khoản trung bình 100 phiên (giảm xuống 1000 để lấy nhiều mã hơn)
-        if df['volume'].tail(100).mean() < 1000:
+        # Lọc thanh khoản trung bình 100000 phiên (giảm xuống 1000 để lấy nhiều mã hơn)
+        if df['volume'].tail(100).mean() < 100000:
             return None
 
         # Lấy dữ liệu phiên gần nhất thay vì bắt buộc phải là "hôm nay" để tránh lỗi cuối tuần
