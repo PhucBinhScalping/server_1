@@ -13,6 +13,174 @@
             background: linear-gradient(135deg, #f9c851, #f15238);
             margin: 0; padding: 0; min-height: 100vh; color: #000000;
         }
+
+        .main-wrapper {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 40px 20px; width: 100%; box-sizing: border-box;
+        }
+
+        .navbar {
+            position: sticky; top: 0; width: 100%;
+            background: #002060; z-index: 1000;
+            padding: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .navbar-container {
+            max-width: 1200px; margin: 0 auto; padding: 0 20px;
+            display: flex; justify-content: flex-start;
+        }
+
+        .navbar-menu { display: flex; gap: 40px; list-style: none; margin: 0; padding: 0; }
+        .navbar-item a { color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        .navbar-item a:hover, .navbar-item.active a { color: #fff200; }
+
+        .container {
+            max-width: 1200px; width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 40px; border-radius: 25px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            text-align: center; box-sizing: border-box;
+        }
+
+        h1 { color: #002060; margin-bottom: 30px; font-size: 2.5em; text-transform: uppercase; }
+
+        .market-update-box {
+            background: #ffffff; padding: 25px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 100%; margin: 0 auto; overflow-x: auto;
+        }
+
+        .chart-container { width: 100%; display: flex; justify-content: center; }
+
+        /* Style cho bảng */
+        .world-index-table, .gold-table {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        .world-index-table th, .gold-table th {
+            background-color: #f8f9fa; padding: 10px 5px; border-bottom: 2px solid #ddd;
+        }
+        .world-index-table td, .gold-table td {
+            padding: 10px 5px; text-align: center; border-bottom: 1px solid #eee;
+        }
+
+        .sticky-contact-btn {
+            position: fixed; bottom: 30px; right: 30px;
+            background-color: #002060; color: #ffffff;
+            padding: 15px 25px; border-radius: 50px;
+            border: 2px solid #ffffff; cursor: pointer; z-index: 999;
+            font-weight: bold; animation: pulseAnimation 2s infinite;
+        }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: none;
+            justify-content: center; align-items: center; z-index: 2000;
+        }
+
+        .modal-box {
+            background: white; padding: 30px; border-radius: 20px;
+            max-width: 400px; width: 90%; text-align: left;
+        }
+
+        .form-group { margin-bottom: 15px; }
+        input, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        
+        .btn-submit { background: #002060; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; }
+        .btn-close { background: #ccc; border: none; padding: 10px; width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+
+        @keyframes pulseAnimation {
+            0% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 32, 96, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0); }
+        }
+        .responsive-chart {
+        width: 100%;
+        min-height: 500px; /* Giữ chiều cao tối thiểu để không bị dẹp */
+        overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-container">
+            <ul class="navbar-menu">
+                <li class="navbar-item"><a href="https://phucbinhscalping.online">Trang chủ</a></li>
+                <li class="navbar-item active"><a href="#">Diễn biến thị trường</a></li>
+                <li class="navbar-item"><a href="https://phucbinhscalping.online/bieu-do-ky-thuat-du-phong.html">Biểu đồ kỹ thuật</a></li>
+                <li class="navbar-item"><a href="https://phucbinhscalping.online/tat-ca-bai-viet.html">Bài Viết</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <button class="sticky-contact-btn" id="openContactBtn">💬 Liên hệ tư vấn</button>
+
+    <div class="main-wrapper">
+        <div class="container">
+            <h1>📈 Diễn Biến Thị Trường</h1>
+            <div class="market-update-box">
+                <div class="chart-container">{{CHART_DIEN_BIEN}}</div>
+            </div>
+            
+            <h2 style="margin-top: 40px; color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
+            <div id="world-table-container" class="market-update-box">
+                {{TABLE_WORLD}}
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="contactModal">
+        <div class="modal-box">
+            <h3>💬 Đăng Ký Tư Vấn</h3>
+            <form action="https://formspree.io/f/xrewzpjl" method="POST">
+                <div class="form-group">
+                    <label for="name">Họ và Tên:</label>
+                    <input type="text" id="name" name="Họ Tên" placeholder="Nguyễn Văn A" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Số điện thoại (Zalo):</label>
+                    <input type="tel" id="phone" name="Số Điện Thoại" placeholder="0901234568" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Địa chỉ Gmail:</label>
+                    <input type="email" id="email" name="Gmail" placeholder="name@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">Nội dung cần hỗ trợ:</label>
+                    <textarea id="message" name="Nội Dung Cần Tư Vấn" rows="3" placeholder="Ví dụ: Cài đặt phần mềm..." required></textarea>
+                </div>
+                <button type="submit" class="btn-submit">Gửi Thông Tin Cho AD</button>
+            </form>
+            <button class="btn-close" id="closeContactBtn">Đóng</button>
+        </div>
+    </div>
+    
+    <script>
+        const modal = document.getElementById('contactModal');
+        const openBtn = document.getElementById('openContactBtn');
+        const closeBtn = document.getElementById('closeContactBtn');
+
+        openBtn.addEventListener('click', () => { modal.style.display = 'flex'; });
+        closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+        window.addEventListener('click', (event) => { if (event.target === modal) { modal.style.display = 'none'; } });
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diễn Biến Thị Trường - Phúc Bình Scalping</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <style>
+        html { scroll-behavior: smooth; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #f9c851, #f15238);
+            margin: 0; padding: 0; min-height: 100vh; color: #000000;
+        }
     
         .main-wrapper {
             display: flex; flex-direction: column; align-items: center;
