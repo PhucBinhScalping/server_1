@@ -33,7 +33,7 @@ def tinh_du_lieu_cp(symbol):
         
         # 1. Lọc thanh khoản (TB 100 phiên > 100,000)
         volume_tb100 = df['volume'].tail(100).mean()
-        if volume_tb100 <= 100000:
+        if volume_tb100 <= 50000:
             return None
 
         # 2. Lọc dữ liệu của ngày hôm nay (Bắt buộc)
