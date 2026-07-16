@@ -1,8 +1,6 @@
-from update_index_only import get_world_index_html
-from update_index_only import get_gold_index_html
+from update_index_only import get_world_index_html, get_gold_index_html
 import pandas as pd
 import requests
-import numpy as np
 import plotly.graph_objects as io_go
 from datetime import datetime, timedelta
 import pytz
@@ -17,8 +15,7 @@ session = requests.Session()
 
 def tinh_du_lieu_cp(symbol):
     vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-    today = datetime.now(vn_tz).strftime("%Y-%m-%d")
-    # Lấy dữ liệu 150 ngày để tính TB 100 phiên
+    # Lấy dữ liệu 150 ngày
     ngay_start = (datetime.now(vn_tz) - timedelta(days=150)).strftime("%Y-%m-%d")
     url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_start}&size=150&page=1'
     
@@ -28,100 +25,74 @@ def tinh_du_lieu_cp(symbol):
         if not data: return None
         
         df = pd.DataFrame(data)
+        df['date'] = pd.to_datetime(df['date'])
         df = df.sort_values(by='date')
+        
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        # 1. Lọc thanh khoản (TB 100 phiên > 100,000)
-        volume_tb100 = df['volume'].tail(100).mean()
-        if volume_tb100 <= 10000:
+        # Lọc thanh khoản trung bình 100 phiên (giảm xuống 1000 để lấy nhiều mã hơn)
+        if df['volume'].tail(100).mean() < 1000:
             return None
 
-        # 2. Lọc dữ liệu của ngày hôm nay (Bắt buộc)
-        df_today = df[df['date'] == today]
-        if df_today.empty:
-            return None
-            
-        last = df_today.iloc[-1]
-        bd_gia = pd.to_numeric(last['pctChange'], errors='coerce')
+        # Lấy dữ liệu phiên gần nhất thay vì bắt buộc phải là "hôm nay" để tránh lỗi cuối tuần
+        last = df.iloc[-1]
         
-        # Tính KL/TB21
-        vol_mean_21 = pd.to_numeric(df['volume'].tail(21).mean(), errors='coerce')
-        kl_tb21 = pd.to_numeric(last['volume'] / vol_mean_21, errors='coerce') if vol_mean_21 > 0 else 0
+        vol_mean_21 = df['volume'].tail(21).mean()
+        kl_tb21 = (last['volume'] / vol_mean_21) if vol_mean_21 > 0 else 0
         
-        return {'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
-    except Exception as e:
+        return {'bd_gia': last['pctChange'], 'kl_tb21': kl_tb21}
+    except:
         return None
 
 def main():
     df_config = pd.read_excel(FILE_DANH_SACH)
-    df_config.loc[df_config['Ticker'].isin(['VIC', 'VRE', 'VHM', 'VPL']), 'Ngành Cấp 2'] = 'Vingroup'
+    # Chuẩn hóa tên ngành để tránh lỗi sai sót dữ liệu
+    df_config['Ngành Cấp 2'] = df_config['Ngành Cấp 2'].astype(str).str.strip().str.upper()
+    df_config.loc[df_config['Ticker'].isin(['VIC', 'VRE', 'VHM', 'VPL']), 'Ngành Cấp 2'] = 'VINGROUP'
     
     results = []
     ds_nganh = df_config['Ngành Cấp 2'].dropna().unique()
     
     for nganh in ds_nganh:
         tickers = df_config[df_config['Ngành Cấp 2'] == nganh]['Ticker'].unique()
-        
         with ThreadPoolExecutor(max_workers=10) as executor:
             data_nganh = [x for x in list(executor.map(tinh_du_lieu_cp, tickers)) if x is not None]
         
         if data_nganh:
             df_nganh = pd.DataFrame(data_nganh)
-            
-            # Tính trung bình các mã có giao dịch ngày hôm nay
-            final_bd = df_nganh['bd_gia'].mean()
-            final_kl = df_nganh['kl_tb21'].mean()
-            
-            results.append({'name': nganh, 'percent_change': final_bd, 'volume_ratio': final_kl})
+            results.append({
+                'name': nganh.title(), 
+                'percent_change': df_nganh['bd_gia'].mean(), 
+                'volume_ratio': df_nganh['kl_tb21'].mean()
+            })
 
     if not results:
-        print("Không có dữ liệu thỏa mãn.")
+        print("Không có dữ liệu.")
         return
         
-    df_final = pd.DataFrame(results)
+    df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
     
-    # Tạo biến thời gian theo múi giờ Việt Nam
-    vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
-     
     # Vẽ biểu đồ
-    colors = ['#198754' if x > 0.0001 else '#dc3545' for x in df_final['percent_change']]
+    colors = ['#198754' if x > 0 else '#dc3545' for x in df_final['percent_change']]
     
     fig = io_go.Figure()
-    
-    # Thêm tham số name="BĐ_giá"
-    fig.add_trace(io_go.Bar(
-        x=df_final['name'], 
-        y=df_final['percent_change'], 
-        marker_color=colors, 
-        name='BĐ_giá', 
-        texttemplate='%{y:.2f}%', 
-        textposition='outside'
-    ))
-    
-    # Thêm tham số name="KL/KLTB21"
-    fig.add_trace(io_go.Scatter(
-        x=df_final['name'], 
-        y=df_final['volume_ratio'], 
-        yaxis='y2', 
-        line=dict(color='#FFD700', width=3), 
-        name='KL/KLTB21'
-    ))
+    fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors, name='BĐ giá', texttemplate='%{y:.1f}%', textposition='outside'))
+    fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#FFD700', width=3), name='KL/TB21'))
     
     fig.update_layout(
-            title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
-            paper_bgcolor='#333333', 
-            plot_bgcolor='#333333', 
-            font=dict(color='white'),
-            height=600, 
-            yaxis=dict(title='BĐ giá (%)'), 
-            yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
-            margin=dict(l=60, r=60, t=80, b=150)
-        )
+        title=f"Biến động ngành {datetime.now().strftime('%d/%m/%Y')}",
+        paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
+        height=500, margin=dict(l=20, r=20, t=50, b=120),
+        yaxis=dict(title='BĐ giá (%)'),
+        yaxis2=dict(title='KL/TB21', overlaying='y', side='right'),
+        xaxis=dict(tickangle=-45) # Nghiêng nhãn ngành
+    )
     
+    # Ghi file
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read().replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
-        
+    
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
@@ -141,7 +112,6 @@ def main():
     # Thay thế Bảng chỉ số thế giới
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
     
-    # Ghi đè ra file index.html
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
     print("Cập nhật thành công!")
