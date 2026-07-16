@@ -1,36 +1,23 @@
-import xlwings as xw
-import datetime as dt
-import pandas as pd
-from datetime import date
+# index_world.py
 import requests
-import time
-from user_agent import random_user
-import RStockvn as rpv
-from selenium.webdriver.common.by import By
-from selenium import webdriver
-import gdown
-from datetime import datetime
-from datetime import timedelta
-from bs4 import BeautifulSoup
-import json
-import html5lib
-head={"User-Agent":random_user()}
-def get_index_stock_world():
+import pandas as pd
+
+def get_world_index_html():
     url = 'https://api-finance-t19.24hmoney.vn/v1/ios/world-stock/all?device_id=web1723350utptenhuf4a5wu7r8rvgjjohs1qjvbq8468116'
-    r = requests.get(url, headers=head)
+    head = {"User-Agent": "Mozilla/5.0"}
     
-    df = pd.DataFrame(r.json()['data']['world_stock'])[['name', 'last_price', 'change_price', 'change_percent']]
-    df['change_percent'] = pd.to_numeric(df['change_percent'])
-    # --- ĐOẠN MÃ LỌC DỮ LIỆU BẠN CẦN THÊM ---
-    # Loại bỏ các dòng có chữ "Futures"
-    condition_not_futures = ~df['name'].str.contains('Futures', case=False, na=False)
-    
-    # Loại bỏ các mã cụ thể
-    remove_list = ['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)']
-    condition_not_specific_items = ~df['name'].isin(remove_list)
-    
-    # Cập nhật lại df đã lọc
-    df = df[condition_not_futures & condition_not_specific_items]
-    # ----------------------------------------
-    
-    return df
+    try:
+        r = requests.get(url, headers=head, timeout=10)
+        data = r.json()['data']['world_stock']
+        df = pd.DataFrame(data)[['name', 'last_price', 'change_price', 'change_percent']]
+        
+        # Lọc dữ liệu
+        df = df[~df['name'].str.contains('Futures', case=False, na=False)]
+        df = df[~df['name'].isin(['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)'])]
+        
+        # Chuyển đổi sang định dạng HTML table đẹp mắt
+        # Thêm class để CSS trong template xử lý
+        html_table = df.to_html(classes='world-index-table', index=False, border=0)
+        return html_table
+    except Exception as e:
+        return "<p>Không thể tải dữ liệu thị trường thế giới.</p>"
