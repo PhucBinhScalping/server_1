@@ -1,0 +1,29 @@
+name: Update World Index Only
+on:
+  workflow_dispatch:
+  schedule:
+    # '*/5' chạy mỗi 5 phút, '*' tất cả các giờ, '*' tất cả ngày, '*' tất cả tháng, '1-5' từ T2 đến T6
+    - cron: '*/5 * * * 1-5' 
+
+permissions:
+  contents: write
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10'}
+      - run: |
+          pip install requests pandas beautifulsoup4
+          python update_index_only.py
+      - name: Commit Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto-update world index [skip ci]"
+            git push
+          fi
