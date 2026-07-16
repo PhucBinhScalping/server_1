@@ -17,17 +17,17 @@ def get_world_index_html():
         df = df[~df['name'].str.contains('Futures', case=False, na=False)]
         df = df[~df['name'].isin(['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)'])]
         
-        # Tạo HTML bảng
-        html = '<table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>Thay đổi</th></tr>'
+        # --- THAY ĐỔI Ở ĐÂY: Thêm cột "Thay đổi giá" ---
+        html = '<table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>Thay đổi</th><th>% Thay đổi</th></tr>'
         for _, row in df.iterrows():
-            # Chuyển đổi an toàn sang float để so sánh màu
             try:
-                change = float(row['change_percent'])
+                change = float(row['last_price','change_price','change_percent'])
                 color = 'green' if change >= 0 else 'red'
             except:
                 color = 'black'
             
-            html += f"<tr><td>{row['name']}</td><td>{row['last_price']}</td><td style='color:{color}'>{row['change_percent']}%</td></tr>"
+            # Thêm row['change_price'] vào dòng HTML
+            html += f"<tr><td>{row['name']}</td><td>{row['last_price']}</td><td style='color:{color}'>{row['change_price']}</td><td style='color:{color}'>{row['change_percent']}%</td></tr>"
         html += '</table>'
         return html
     except Exception as e:
