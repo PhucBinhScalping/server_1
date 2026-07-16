@@ -54,14 +54,10 @@
         /* --- CSS MỚI TỐI ƯU RESPONSIVE CHO BIỂU ĐỒ --- */
         .chart-container {
             width: 100%;
-            max-width: 100%;
-            display: flex;
-            justify-content: center;
+            margin: 0 auto;
         }
-    
         .js-plotly-plot {
-            width: 100% !important;
-            height: auto !important;
+            width: 100% !important; /* Quan trọng: Ghi đè inline-style của Plotly */
         }
         /* ------------------------------------------- */
     
@@ -125,13 +121,9 @@
     <div class="main-wrapper">
         <div class="container">
             <h1>📈 Diễn Biến Thị Trường</h1>
-            <div class="market-update-box">
+             <div class="market-update-box">
                 <div class="chart-container">
-                    <div class="chart-wrapper">
-                        <div class="chart-inner">
-                            {{CHART_DIEN_BIEN}}
-                        </div>
-                    </div>
+                    {{CHART_DIEN_BIEN}}
                 </div>
             </div>
             
