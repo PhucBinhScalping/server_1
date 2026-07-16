@@ -1,4 +1,3 @@
-# update_index_only.py
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -12,62 +11,82 @@ def get_world_index_html():
         r = requests.get(url, headers=head, timeout=10)
         data = r.json()['data']['world_stock']
         df = pd.DataFrame(data)[['name', 'last_price', 'change_price', 'change_percent']]
-        
-        # Lọc dữ liệu
         df = df[~df['name'].str.contains('Futures', case=False, na=False)]
-        df = df[~df['name'].isin(['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)'])]
         
-        # Tạo HTML bảng
-        html = '<table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>Thay đổi</th><th>% Thay đổi</th></tr>'
-        
+        html = '<table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
         for _, row in df.iterrows():
-            # Xác định màu dựa trên cột change_percent
             try:
-                # Ép kiểu an toàn từ cột change_percent
-                change_val = float(str(row['change_percent']).replace(',', ''))
-                color = 'green' if change_val >= 0 else 'red'
+                change_pct = float(str(row['change_percent']).replace(',', ''))
+                color = 'green' if change_pct >= 0 else 'red'
             except:
                 color = 'black'
-            
-            # Áp dụng color cho cả 3 cột: Giá, Thay đổi, % Thay đổi
             html += f"""<tr>
                 <td>{row['name']}</td>
                 <td style='color:{color}'>{row['last_price']}</td>
                 <td style='color:{color}'>{row['change_price']}</td>
                 <td style='color:{color}'>{row['change_percent']}%</td>
             </tr>"""
-            
         html += '</table>'
         return html
-    except Exception as e:
-        print(f"Lỗi khi lấy dữ liệu: {e}")
-        return "<p>Không thể tải dữ liệu thị trường thế giới.</p>"
-        
+    except:
+        return "Lỗi tải dữ liệu"
+
+def gia_vang_24money():
+    url = 'https://api-finance-t19.24hmoney.vn/v1/ios/world-stock/all?device_id=web1723350utptenhuf4a5wu7r8rvgjjohs1qjvbq8468116'
+    head = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(url, headers=head)
+    data = r.json()['data']['gold_price']
+    df = pd.DataFrame(data)[['Last', 'footer', 'Percent', 'change']]
+    # Xử lý dữ liệu
+    df['Percent'] = pd.to_numeric(df['Percent'].str.replace('%', '').str.replace(',', ''), errors='coerce')
+    return df
+
+def get_gold_index_html():
+    try:
+        df = gia_vang_24money()
+        html = '<table class="gold-table"><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
+        for _, row in df.iterrows():
+            color = 'green' if float(row['Percent']) >= 0 else 'red'
+            html += f"""<tr>
+                <td>{row['footer']}</td>
+                <td style='color:{color}'>{row['Last']}</td>
+                <td style='color:{color}'>{row['change']}</td>
+                <td style='color:{color}'>{row['Percent']}%</td>
+            </tr>"""
+        html += '</table>'
+        return html
+    except:
+        return "Lỗi tải dữ liệu vàng"
 
 def update_world_table():
-    # 1. Lấy dữ liệu bảng mới nhất
-    new_table_html = get_world_index_html()
+    world_html = get_world_index_html()
+    gold_html = get_gold_index_html()
     
-    # 2. Đọc file index.html hiện tại
-    try:
-        with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
-            soup = BeautifulSoup(f, 'html.parser')
+    with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
+        soup = BeautifulSoup(f, 'html.parser')
+    
+    target_div = soup.find(id="world-table-container")
+    
+    if target_div:
+        target_div.clear()
+        # Flexbox để chia 2 cột
+        flex_div = BeautifulSoup(f"""
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h3 style="text-align:center;">Thị trường Thế giới</h3>
+                    {world_html}
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <h3 style="text-align:center;">Giá Vàng</h3>
+                    {gold_html}
+                </div>
+            </div>
+        """, 'html.parser')
+        target_div.append(flex_div)
         
-        # 3. Tìm vị trí đặt bảng có id="world-table-container"
-        target_div = soup.find(id="world-table-container")
-        
-        if target_div:
-            target_div.clear()
-            target_div.append(BeautifulSoup(new_table_html, 'html.parser'))
-            
-            # 4. Ghi đè lại file
-            with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
-                f.write(str(soup))
-            print("Cập nhật chỉ số thế giới vào index.html thành công!")
-        else:
-            print("Không tìm thấy <div id='world-table-container'> trong file index.html.")
-    except FileNotFoundError:
-        print(f"Không tìm thấy file {OUTPUT_FILE}")
+        with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+            f.write(str(soup))
+        print("Cập nhật thành công 2 bảng!")
 
 if __name__ == "__main__":
     update_world_table()
