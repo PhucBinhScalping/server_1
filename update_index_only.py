@@ -17,22 +17,32 @@ def get_world_index_html():
         df = df[~df['name'].str.contains('Futures', case=False, na=False)]
         df = df[~df['name'].isin(['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)'])]
         
-        # --- THAY ĐỔI Ở ĐÂY: Thêm cột "Thay đổi giá" ---
+        # Tạo HTML bảng
         html = '<table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>Thay đổi</th><th>% Thay đổi</th></tr>'
+        
         for _, row in df.iterrows():
+            # Xác định màu dựa trên cột change_percent
             try:
-                change = float(row['last_price','change_price','change_percent'])
-                color = 'green' if change >= 0 else 'red'
+                # Ép kiểu an toàn từ cột change_percent
+                change_val = float(str(row['change_percent']).replace(',', ''))
+                color = 'green' if change_val >= 0 else 'red'
             except:
                 color = 'black'
             
-            # Thêm row['change_price'] vào dòng HTML
-            html += f"<tr><td>{row['name']}</td><td>{row['last_price']}</td><td style='color:{color}'>{row['change_price']}</td><td style='color:{color}'>{row['change_percent']}%</td></tr>"
+            # Áp dụng color cho cả 3 cột: Giá, Thay đổi, % Thay đổi
+            html += f"""<tr>
+                <td>{row['name']}</td>
+                <td style='color:{color}'>{row['last_price']}</td>
+                <td style='color:{color}'>{row['change_price']}</td>
+                <td style='color:{color}'>{row['change_percent']}%</td>
+            </tr>"""
+            
         html += '</table>'
         return html
     except Exception as e:
         print(f"Lỗi khi lấy dữ liệu: {e}")
         return "<p>Không thể tải dữ liệu thị trường thế giới.</p>"
+        
 
 def update_world_table():
     # 1. Lấy dữ liệu bảng mới nhất
