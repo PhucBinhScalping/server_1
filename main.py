@@ -126,9 +126,10 @@ def main():
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
+    # 2. Tạo nội dung chứa cả 2 bảng
     market_tables_content = f"""
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 300px;">
+        <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
             <h3 style="text-align:center;">Thị trường Thế giới</h3>
             {world_html}
         </div>
