@@ -31,9 +31,9 @@ def tinh_du_lieu_cp(symbol):
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        # 1. Lọc thanh khoản (TB 100 phiên > 100,000)
+        # 1. Lọc thanh khoản (TB 100 phiên > 10,000)
         volume_tb100 = df['volume'].tail(100).mean()
-        if volume_tb100 <= 100000:
+        if volume_tb100 <= 10000:
             return None
 
         # 2. Lọc dữ liệu của ngày hôm nay (Bắt buộc)
@@ -88,6 +88,7 @@ def main():
     
     fig = io_go.Figure()
     
+    # Thêm tham số name="BĐ_giá"
     fig.add_trace(io_go.Bar(
         x=df_final['name'], 
         y=df_final['percent_change'], 
@@ -97,6 +98,7 @@ def main():
         textposition='outside'
     ))
     
+    # Thêm tham số name="KL/KLTB21"
     fig.add_trace(io_go.Scatter(
         x=df_final['name'], 
         y=df_final['volume_ratio'], 
@@ -106,42 +108,27 @@ def main():
     ))
     
     fig.update_layout(
-        title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
-        paper_bgcolor='#333333', 
-        plot_bgcolor='#333333', 
-        font=dict(color='white'),
-        autosize=True,        # Tắt tự động co giãn
-        #width=800,             # Cố định chiều rộng 800px
-        #height=500,            # Cố định chiều cao
-        yaxis=dict(title='BĐ giá (%)'), 
-        yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
-        margin=dict(l=60, r=60, t=80, b=150),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-    )
-    
-    # Xoay trục X để dễ đọc hơn trong không gian cố định
-    fig.update_xaxes(tickangle=30)
-
-    # Đọc template
+            title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
+            paper_bgcolor='#333333', 
+            plot_bgcolor='#333333', 
+            font=dict(color='white'),
+            height=600, 
+            yaxis=dict(title='BĐ giá (%)'), 
+            yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
+            margin=dict(l=60, r=60, t=80, b=150)
+        )
+    # Đọc template và thay thế cả 2 placeholder
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read()
         
-    # Thay thế Chart với cấu hình responsive
-    chart_html = fig.to_html(
-        full_html=False, 
-        include_plotlyjs='cdn', 
-        config={'responsive': True, 'displayModeBar': False}
-    )
-    html = html.replace('{{CHART_DIEN_BIEN}}', chart_html)
-
-    # Phần xử lý bảng đã có đường kẻ nét đứt
+    # Thay thế Chart
+    html = html.replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
-    # 2. Tạo nội dung chứa cả 2 bảng
     market_tables_content = f"""
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
+        <div style="flex: 1; min-width: 300px;">
             <h3 style="text-align:center;">Thị trường Thế giới</h3>
             {world_html}
         </div>
