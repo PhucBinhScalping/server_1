@@ -88,7 +88,6 @@ def main():
     
     fig = io_go.Figure()
     
-    # Thêm tham số name="BĐ_giá"
     fig.add_trace(io_go.Bar(
         x=df_final['name'], 
         y=df_final['percent_change'], 
@@ -98,7 +97,6 @@ def main():
         textposition='outside'
     ))
     
-    # Thêm tham số name="KL/KLTB21"
     fig.add_trace(io_go.Scatter(
         x=df_final['name'], 
         y=df_final['volume_ratio'], 
@@ -107,22 +105,36 @@ def main():
         name='KL/KLTB21'
     ))
     
+    # Cập nhật Layout để tối ưu cho di động
     fig.update_layout(
-            title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
-            paper_bgcolor='#333333', 
-            plot_bgcolor='#333333', 
-            font=dict(color='white'),
-            height=600, 
-            yaxis=dict(title='BĐ giá (%)'), 
-            yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
-            margin=dict(l=60, r=60, t=80, b=150)
-        )
-    # Đọc template và thay thế cả 2 placeholder
+        title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
+        paper_bgcolor='#333333', 
+        plot_bgcolor='#333333', 
+        font=dict(color='white'),
+        autosize=True,         # Tự động co giãn
+        height=550,            # Chiều cao cố định vừa phải
+        yaxis=dict(title='BĐ giá (%)'), 
+        yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
+        margin=dict(l=40, r=40, t=80, b=100), # Margin hẹp hơn để tận dụng diện tích
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
+    
+    # Xoay tên ngành ở trục X để không bị chồng chéo trên màn hình nhỏ
+    fig.update_xaxes(tickangle=45)
+
+    # Đọc template
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read()
         
-    # Thay thế Chart
-    html = html.replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
+    # Thay thế Chart với cấu hình responsive
+    chart_html = fig.to_html(
+        full_html=False, 
+        include_plotlyjs='cdn', 
+        config={'responsive': True, 'displayModeBar': False}
+    )
+    html = html.replace('{{CHART_DIEN_BIEN}}', chart_html)
+
+    # Phần xử lý bảng đã có đường kẻ nét đứt
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
