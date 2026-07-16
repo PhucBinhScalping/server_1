@@ -52,16 +52,30 @@
         }
     
         /* --- CSS MỚI TỐI ƯU RESPONSIVE CHO BIỂU ĐỒ --- */
-        .chart-container {
+        .chart-container { 
+            width: 100%; 
+            display: flex; 
+            justify-content: center;
+            overflow: hidden; /* Tránh tràn layout */
+        }
+    
+        .chart-wrapper {
             width: 100%;
-            max-width: 100%;
             display: flex;
             justify-content: center;
         }
+        
+        .chart-inner {
+            width: 100%;
+            /* Đảm bảo Plotly không vượt quá chiều rộng của khung cha */
+            max-width: 100%; 
+        }
     
+        /* Đảm bảo Plotly tự co giãn theo container cha */
         .js-plotly-plot {
             width: 100% !important;
             height: auto !important;
+            min-height: 350px; /* Chiều cao tối thiểu để biểu đồ không quá dẹp */
         }
         /* ------------------------------------------- */
     
