@@ -11,10 +11,9 @@ def get_world_index_html():
         r = requests.get(url, headers=head, timeout=10)
         data = r.json()['data']['world_stock']
         df = pd.DataFrame(data)[['name', 'last_price', 'change_price', 'change_percent']]
-        df = df[~df['name'].str.contains('Futures', case=False, na=False)]    # Loại bỏ các dòng có chữ "Futures"
-        # Loại bỏ các mã cụ thể
+        df = df[~df['name'].str.contains('Futures', case=False, na=False)]
         remove_list = ['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)']
-        df = ~df['name'].isin(remove_list)
+        df = df[~df['name'].isin(remove_list)] # Sửa dòng này
         
         html = '<table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
         for _, row in df.iterrows():
