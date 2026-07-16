@@ -109,18 +109,15 @@ def main():
         title=f"Biến động ngành - {vn_now.strftime('%d-%m-%Y %H:%M:%S')}", 
         paper_bgcolor='#333333', 
         plot_bgcolor='#333333', 
-        font=dict(color='white'),
-        autosize=True,        # Tắt tự động co giãn
-        #width=800,             # Cố định chiều rộng 800px
-        #height=500,            # Cố định chiều cao
-        yaxis=dict(title='BĐ giá (%)'), 
-        yaxis2=dict(title='KL/TBKL21', overlaying='y', side='right'),
-        margin=dict(l=60, r=60, t=80, b=150),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        font=dict(color='white', size=11), # Giảm font chữ tổng thể xuống một chút
+        autosize=True,         
+        height=400,            # Cố định chiều cao 400px để không bị dẹp
+        margin=dict(l=40, r=40, t=60, b=120), # Margin dưới lớn để chứa chữ ngành
+        legend=dict(orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5)
     )
     
-    # Xoay trục X để dễ đọc hơn trong không gian cố định
-    fig.update_xaxes(tickangle=30)
+    # Quan trọng: Xoay chữ 90 độ và chỉnh font nhỏ để không tràn màn hình
+    fig.update_xaxes(tickangle=90, tickfont=dict(size=9))
 
     # Đọc template
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
