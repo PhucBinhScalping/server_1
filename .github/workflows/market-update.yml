@@ -21,7 +21,7 @@ jobs:
         with: {python-version: '3.10'}
         
       - name: Install dependencies
-        run: pip install pandas requests pytz
+        run: pip install pandas requests pytz jinja2
 
       - name: Run Market Update
         run: |
