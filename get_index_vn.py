@@ -9,20 +9,26 @@ def get_data_index():
         
         # 2. Tạo DataFrame
         df = pd.DataFrame(results_vni)
-        name_map = {'VN-Index': 'VNINDEX', 'VN30-Index': 'VN30', 'HNXINDEX': 'HNX', 'HNX30-Index': 'HNX30', 'HNXUPCOMINDEX': 'UPCOM'}
+        name_map = {
+            'VN-Index': 'VNINDEX', 
+            'VN30-Index': 'VN30', 
+            'HNXINDEX': 'HNX', 
+            'HNX30-Index': 'HNX30', 
+            'HNXUPCOMINDEX': 'UPCOM'
+        }
         df['name'] = df['name'].replace(name_map)
         
         # Lọc danh sách an toàn
         df = df[df['name'].isin(name_map.values())].copy()
         
-        # Chuyển đổi dữ liệu
+        # Chuyển đổi dữ liệu - Đảm bảo các cột số không bị lỗi
         df['change'] = pd.to_numeric(df['change'], errors='coerce').fillna(0)
         df['percent'] = pd.to_numeric(df['percent'], errors='coerce').fillna(0) / 100
         df['volume'] = pd.to_numeric(df['volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
         df['value'] = pd.to_numeric(df['value'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
         df['index'] = pd.to_numeric(df['index'], errors='coerce').fillna(0)
 
-        # 3. Lấy dữ liệu lịch sử
+        # 3. Lấy dữ liệu lịch sử để tính thanh khoản
         urls = {
             'VNINDEX': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HOSE&Symbol=VNINDEX&PageIndex=1&PageSize=20',
             'VN30': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HOSE&Symbol=VN30INDEX&PageIndex=1&PageSize=20',
@@ -35,6 +41,7 @@ def get_data_index():
         for name, url in urls.items():
             try:
                 r = requests.get(url, timeout=5).json()
+                # Lấy giá trị khối lượng khớp lệnh từ lịch sử
                 vol_raw = str(r['Data']['Data'][1]['KhoiLuongKhopLenh']).replace(',', '')
                 data_list.append({'name': name, 'volume_2': float(vol_raw)})
             except:
@@ -44,16 +51,18 @@ def get_data_index():
         result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
         result_df['thanh khoản'] = (((result_df['volume'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1)
         
-        # 5. Định dạng
+        # 5. Định dạng lại bảng
         custom_order = ['VNINDEX', 'VN30', 'HNX', 'HNX30', 'UPCOM']
         result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
         result_df = result_df.sort_values('name').set_index('name')
         
+        # Chọn các cột cần thiết
         cols_to_use = ['index', 'change', 'percent', 'volume', 'value', 'thanh khoản']
         final_df = result_df.reindex(columns=cols_to_use).fillna(0)
+        # Đặt tên tiếng Việt cho bảng
         final_df.columns = ['Chỉ số', 'Thay đổi', '%', 'KL Khớp', 'GT Khớp', 'Thanh khoản %']
         
-        # 6. Tạo bảng HTML thủ công (Thay thế cho .style để không cần jinja2)
+        # 6. Tạo bảng HTML thủ công
         html = '<table class="world-index-table" border="0" style="width:100%; border-collapse:collapse; text-align:center;">'
         html += '<thead><tr><th>Chỉ số</th><th>Điểm số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp</th><th>Thanh khoản %</th></tr></thead><tbody>'
         
@@ -61,7 +70,7 @@ def get_data_index():
             def get_color(v): return '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
             
             html += f"<tr><td>{name}</td>"
-            # Thêm cột điểm số vào đây:
+            # Lấy trực tiếp từ cột 'Chỉ số' để hiển thị điểm chính xác
             html += f"<td style='font-weight:bold;'>{row['Chỉ số']:,.2f}</td>" 
             html += f"<td style='color:{get_color(row['Thay đổi'])}; font-weight:bold;'>{row['Thay đổi']:,.2f}</td>"
             html += f"<td style='color:{get_color(row['%'])}; font-weight:bold;'>{row['%']:.2%}</td>"
@@ -74,3 +83,7 @@ def get_data_index():
 
     except Exception as e:
         return f"<p style='color:red;'>Lỗi tải dữ liệu bảng giá: {e}</p>"
+
+# Dòng này để test khi chạy trực tiếp file
+if __name__ == "__main__":
+    print(get_data_index())
