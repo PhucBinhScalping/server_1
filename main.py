@@ -93,10 +93,17 @@ def main():
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read().replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
     
+    time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
+    
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
     market_tables_content = f"""
+    <!-- Dòng thời gian cập nhật chung cho cả 2 bảng -->
+    <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
+        Cập nhật: {time_str}
+    </div>
+    
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
             <h3 style="text-align:center;">Thị trường Thế giới</h3>
