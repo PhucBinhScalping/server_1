@@ -48,72 +48,17 @@ def tinh_du_lieu_cp(symbol):
         return None
 
 def main():
-    # 1. Xử lý dữ liệu bảng Chỉ số VN
-    try:
-        table_vietnam_html = get_data_index() 
-    except Exception as e:
-        table_vietnam_html = f"<p>Lỗi tải dữ liệu VNI: {e}</p>"
-        
-    df_config = pd.read_excel(FILE_DANH_SACH)
-    # Chuẩn hóa tên ngành để tránh lỗi sai sót dữ liệu
-    df_config['Ngành Cấp 2'] = df_config['Ngành Cấp 2'].astype(str).str.strip().str.upper()
-    df_config.loc[df_config['Ticker'].isin(['VIC', 'VRE', 'VHM', 'VPL']), 'Ngành Cấp 2'] = 'VINGROUP'
-    
-    results = []
-    ds_nganh = df_config['Ngành Cấp 2'].dropna().unique()
-    
-    for nganh in ds_nganh:
-        tickers = df_config[df_config['Ngành Cấp 2'] == nganh]['Ticker'].unique()
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            data_nganh = [x for x in list(executor.map(tinh_du_lieu_cp, tickers)) if x is not None]
-        
-        if data_nganh:
-            df_nganh = pd.DataFrame(data_nganh)
-            results.append({
-                'name': nganh.title(), 
-                'percent_change': df_nganh['bd_gia'].mean(), 
-                'volume_ratio': df_nganh['kl_tb21'].mean()
-            })
-
-    if not results:
-        print("Không có dữ liệu.")
-        return
-
-    df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
+    # 1. Luôn cập nhật Dữ liệu Thế giới & Vàng (Chạy mọi lúc)
     vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
-    # Vẽ biểu đồ
-    colors = ['#198754' if x > 0 else '#dc3545' for x in df_final['percent_change']]
-    
-    fig = io_go.Figure()
-    fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors, name='BĐ giá', texttemplate='%{y:.1f}%', textposition='outside'))
-    fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#FFD700', width=3), name='KL/TB21'))
-    
-    fig.update_layout(
-        title=f"Biến động ngành {vn_now.strftime('%d-%m-%Y %H:%M:%S')}",
-        paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
-        height=500, margin=dict(l=20, r=20, t=50, b=120),
-        yaxis=dict(title='BĐ giá (%)'),
-        yaxis2=dict(title='KL/TB21', overlaying='y', side='right'),
-        xaxis=dict(tickangle=-45) # Nghiêng nhãn ngành
-    )
-    
-    # Ghi file
-    with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
-        html = f.read()
-
-    html = html.replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
-    html = html.replace('{{TABLE_VIETNAM}}', table_vietnam_html)
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
     
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
     market_tables_content = f"""
-    <!-- Dòng thời gian cập nhật chung cho cả 2 bảng -->
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
-    
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
         <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
             <h3 style="text-align:center;">Thị trường Thế giới</h3>
@@ -125,13 +70,74 @@ def main():
         </div>
     </div>
     """
-    
-    # Thay thế Bảng chỉ số thế giới
+
+    # 2. Xử lý Logic theo chế độ (Mode)
+    chart_html = ""
+    table_vietnam_html = ""
+
+    if mode == 'all':
+        print("Đang thực hiện tính toán dữ liệu Ngành và VN-Index...")
+        
+        # A. Xử lý dữ liệu bảng Chỉ số VN
+        try:
+            table_vietnam_html = get_data_index() 
+        except Exception as e:
+            table_vietnam_html = f"<p>Lỗi tải dữ liệu VNI: {e}</p>"
+        
+        # B. Xử lý dữ liệu biểu đồ Ngành (Đầy đủ chức năng)
+        df_config = pd.read_excel(FILE_DANH_SACH)
+        df_config['Ngành Cấp 2'] = df_config['Ngành Cấp 2'].astype(str).str.strip().str.upper()
+        df_config.loc[df_config['Ticker'].isin(['VIC', 'VRE', 'VHM', 'VPL']), 'Ngành Cấp 2'] = 'VINGROUP'
+        
+        results = []
+        ds_nganh = df_config['Ngành Cấp 2'].dropna().unique()
+        
+        for nganh in ds_nganh:
+            tickers = df_config[df_config['Ngành Cấp 2'] == nganh]['Ticker'].unique()
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                data_nganh = [x for x in list(executor.map(tinh_du_lieu_cp, tickers)) if x is not None]
+            
+            if data_nganh:
+                df_nganh = pd.DataFrame(data_nganh)
+                results.append({
+                    'name': nganh.title(), 
+                    'percent_change': df_nganh['bd_gia'].mean(), 
+                    'volume_ratio': df_nganh['kl_tb21'].mean()
+                })
+
+        if results:
+            df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
+            colors = ['#198754' if x > 0 else '#dc3545' for x in df_final['percent_change']]
+            
+            fig = io_go.Figure()
+            fig.add_trace(io_go.Bar(x=df_final['name'], y=df_final['percent_change'], marker_color=colors, name='BĐ giá', texttemplate='%{y:.1f}%', textposition='outside'))
+            fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#FFD700', width=3), name='KL/TB21'))
+            
+            fig.update_layout(
+                title=f"Biến động ngành {time_str}",
+                paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
+                height=500, margin=dict(l=20, r=20, t=50, b=120),
+                yaxis=dict(title='BĐ giá (%)'),
+                yaxis2=dict(title='KL/TB21', overlaying='y', side='right'),
+                xaxis=dict(tickangle=-45)
+            )
+            chart_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+    else:
+        print("Chế độ World:...")
+        chart_html = "<span>Biểu đồ ngành chờ phiên giao dịch...</span>"
+        table_vietnam_html = "<span>Dữ liệu thị trường VN đang tạm nghỉ</span>"
+
+    # 3. Ghi file HTML (Đầy đủ)
+    with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
+        html = f.read()
+
+    html = html.replace('{{CHART_DIEN_BIEN}}', chart_html)
+    html = html.replace('{{TABLE_VIETNAM}}', table_vietnam_html)
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
     
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
-    print("Cập nhật thành công!")
+    print("--- Cập nhật thành công! ---")
 
 if __name__ == "__main__":
     main()
