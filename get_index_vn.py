@@ -55,12 +55,14 @@ def get_data_index():
         
         # 6. Tạo bảng HTML thủ công (Thay thế cho .style để không cần jinja2)
         html = '<table class="world-index-table" border="0" style="width:100%; border-collapse:collapse; text-align:center;">'
-        html += '<thead><tr><th>Chỉ số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp</th><th>Thanh khoản %</th></tr></thead><tbody>'
+        html += '<thead><tr><th>Chỉ số</th><th>Điểm số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp</th><th>Thanh khoản %</th></tr></thead><tbody>'
         
         for name, row in final_df.iterrows():
             def get_color(v): return '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
             
             html += f"<tr><td>{name}</td>"
+            # Thêm cột điểm số vào đây:
+            html += f"<td style='font-weight:bold;'>{row['Chỉ số']:,.2f}</td>" 
             html += f"<td style='color:{get_color(row['Thay đổi'])}; font-weight:bold;'>{row['Thay đổi']:,.2f}</td>"
             html += f"<td style='color:{get_color(row['%'])}; font-weight:bold;'>{row['%']:.2%}</td>"
             html += f"<td>{row['KL Khớp']:,.0f}</td>"
