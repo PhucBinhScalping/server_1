@@ -1,10 +1,12 @@
 from update_index_only import get_world_index_html, get_gold_index_html
+from index_service import get_data_index
 import pandas as pd
 import requests
 import plotly.graph_objects as io_go
 from datetime import datetime, timedelta
 import pytz
 from concurrent.futures import ThreadPoolExecutor
+
 
 # Cấu hình
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
@@ -46,6 +48,17 @@ def tinh_du_lieu_cp(symbol):
         return None
 
 def main():
+    # 1. Xử lý dữ liệu bảng Chỉ số VN
+    try:
+        df_vni = get_data_index()
+        # Đổi tên cột cho đẹp
+        df_vni.columns = ['Chỉ số', 'Thay đổi', '%', 'KL Khớp', 'GT Khớp', 'Thanh khoản']
+        # Format số để hiển thị dễ đọc
+        df_vni['%'] = df_vni['%'].map('{:.2%}'.format)
+        table_vietnam_html = df_vni.to_html(classes='world-index-table', border=0, justify='center', index=False)
+    except Exception as e:
+        table_vietnam_html = f"<p>Lỗi tải dữ liệu VNI: {e}</p>"
+        
     df_config = pd.read_excel(FILE_DANH_SACH)
     # Chuẩn hóa tên ngành để tránh lỗi sai sót dữ liệu
     df_config['Ngành Cấp 2'] = df_config['Ngành Cấp 2'].astype(str).str.strip().str.upper()
@@ -70,7 +83,7 @@ def main():
     if not results:
         print("Không có dữ liệu.")
         return
-        
+
     df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
     vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     # Vẽ biểu đồ
@@ -91,8 +104,10 @@ def main():
     
     # Ghi file
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
-        html = f.read().replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
-    
+        html = f.read()
+
+    html = html.replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
+    html = html.replace('{{TABLE_VIETNAM}}', table_vietnam_html)
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
     
     world_html = get_world_index_html()
