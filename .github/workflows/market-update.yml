@@ -1,36 +1,37 @@
-name: Market Update Manager
-
+name: Market Update
 on:
   workflow_dispatch:
   schedule:
-    # 02:20 đến 08:05 UTC tương ứng 09:20 đến 15:05 VN
-    # Chạy mỗi 10 phút
-    - cron: '20-59/10 2 * * 1-5'
-    - cron: '0-5/10 8 * * 1-5'
+    # Lịch trình gộp: T2-T6, mỗi 10 phút (đáp ứng yêu cầu của bạn)
+    - cron: '*/10 * * * 1-5'
+
+permissions:
+  contents: write
 
 jobs:
-  update:
+  update-all:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with: {python-version: '3.10'}
         
       - name: Install dependencies
-        run: pip install pandas requests pytz jinja2
+        run: pip install requests pandas beautifulsoup4 plotly user_agent openpyxl
 
-      - name: Run Market Update
+      - name: Run Scripts
         run: |
-          # Chỉ chạy logic cập nhật bảng VN-Index
-          python -c "from get_index_vn import get_data_index; print('Cập nhật bảng VN-Index...')"
-          
-          # Thực hiện commit và push đè lên file index.html
+          # Chạy lần lượt các script cập nhật
+          python get_index_vn.py
+          python update_index_only.py
+          python main.py
+
+      - name: Commit and Push
+        run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Auto-update VN Index: $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-          git push origin main --force
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto-update market data: $(date +'%Y-%m-%d %H:%M:%S')"
+            git push origin main
+          fi
