@@ -72,7 +72,7 @@ def main():
         return
         
     df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
-    
+    vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     # Vẽ biểu đồ
     colors = ['#198754' if x > 0 else '#dc3545' for x in df_final['percent_change']]
     
@@ -81,7 +81,7 @@ def main():
     fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#FFD700', width=3), name='KL/TB21'))
     
     fig.update_layout(
-        title=f"Biến động ngành {datetime.now().strftime('%d/%m/%Y')}",
+        title=f"Biến động ngành {vn_now.strftime('%d-%m-%Y %H:%M:%S')}",
         paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
         height=500, margin=dict(l=20, r=20, t=50, b=120),
         yaxis=dict(title='BĐ giá (%)'),
