@@ -4,20 +4,20 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: # Cho phép nhấn nút "Run workflow" thủ công trên GitHub
   schedule:
-    # --- BUỔI SÁNG (Giờ VN: 09:30 - 11:45) ---
-    # 09:30, 09:45
-    - cron: '0,16,30,45 2 * * 1-5'
-    # 10:00, 10:15, 10:30, 10:45, 11:00, 11:15, 11:30, 11:45
+    # --- BUỔI SÁNG (Giờ VN: 09:30 - 11:45 | UTC: 02:30 - 04:45) ---
+    # 09:30, 09:45 VN
+    - cron: '30,45 2 * * 1-5'
+    # 10:00, 10:15, 10:30, 10:45, 11:00, 11:15, 11:30, 11:45 VN
     - cron: '0,15,30,45 3-4 * * 1-5'
-    
-    # --- BUỔI CHIỀU (Giờ VN: 13:15 - 15:05) ---
-    # 13:15, 13:30, 13:45
+
+    # --- BUỔI CHIỀU (Giờ VN: 13:15 - 15:05 | UTC: 06:15 - 08:05) ---
+    # 13:15, 13:30, 13:45 VN
     - cron: '15,30,45 6 * * 1-5'
-    # 14:00, 14:15, 14:30, 14:45
+    # 14:00, 14:15, 14:30, 14:45 VN
     - cron: '0,15,30,45 7 * * 1-5'
-    # 15:00, 15:05
+    # 15:00, 15:05 VN
     - cron: '0,5 8 * * 1-5'
 
 permissions:
@@ -39,7 +39,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests pandas plotly user_agent openpyxl beautifulsoup4
-          
 
       - name: Execute Python Script
         run: |
@@ -50,12 +49,15 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Add tất cả thay đổi (ví dụ: file dữ liệu mới hoặc file html cập nhật)
+          # Kéo các thay đổi mới nhất về để tránh lỗi xung đột (conflict)
+          git pull origin main --rebase
+          
+          # Add toàn bộ file thay đổi (file data, file html biểu đồ...)
           git add .
           
-          # Kiểm tra nếu không có thay đổi thì bỏ qua để tránh commit rỗng
+          # Kiểm tra nếu có sự thay đổi dữ liệu thì mới commit
           if git diff --staged --quiet; then
-            echo "Không có thay đổi dữ liệu, bỏ qua commit."
+            echo "Không có thay đổi dữ liệu mới, bỏ qua commit."
           else
             git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]"
             git push origin main
