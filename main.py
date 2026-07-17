@@ -34,7 +34,7 @@ def tinh_du_lieu_cp(symbol):
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
         # Lọc thanh khoản trung bình 100000 phiên (giảm xuống 1000 để lấy nhiều mã hơn)
-        if df['volume'].tail(100).mean() < 100000:
+        if df['volume'].tail(100).mean() < 90000:
             return None
 
         # Lấy dữ liệu phiên gần nhất thay vì bắt buộc phải là "hôm nay" để tránh lỗi cuối tuần
@@ -50,12 +50,7 @@ def tinh_du_lieu_cp(symbol):
 def main():
     # 1. Xử lý dữ liệu bảng Chỉ số VN
     try:
-        df_vni = get_data_index()
-        # Đổi tên cột cho đẹp
-        df_vni.columns = ['Chỉ số', 'Thay đổi', '%', 'KL Khớp', 'GT Khớp', 'Thanh khoản']
-        # Format số để hiển thị dễ đọc
-        df_vni['%'] = df_vni['%'].map('{:.2%}'.format)
-        table_vietnam_html = df_vni.to_html(classes='world-index-table', border=0, justify='center', index=False)
+        table_vietnam_html = get_data_index() 
     except Exception as e:
         table_vietnam_html = f"<p>Lỗi tải dữ liệu VNI: {e}</p>"
         
