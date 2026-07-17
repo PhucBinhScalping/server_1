@@ -21,7 +21,7 @@ jobs:
           python-version: '3.10'
           
       - name: Install dependencies
-        run: pip install requests pandas beautifulsoup4
+        run: pip install requests pandas beautifulsoup4 datetime pytz
           
       - name: Run Index Update
         run: python update_index_only.py
