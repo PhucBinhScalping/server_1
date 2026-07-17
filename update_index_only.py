@@ -71,10 +71,12 @@ def get_gold_index_html():
     except Exception as e:
         return f"<p>Lỗi tải vàng: {e}</p>"
         
-
 def update_world_table():
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
+    
+    # Lấy giờ Việt Nam
+    vn_time = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh')).strftime('%d-%m-%Y %H:%M:%S')
     
     with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
         soup = BeautifulSoup(f, 'html.parser')
@@ -83,24 +85,28 @@ def update_world_table():
     
     if target_div:
         target_div.clear()
-        # Flexbox để chia 2 cột
-        flex_div = BeautifulSoup(f"""
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 300px;">
-                    <h3 style="text-align:center;">Thị trường Thế giới</h3>
-                    {world_html}
-                </div>
-                <div style="flex: 1; min-width: 300px;">
-                    <h3 style="text-align:center;">Giá Vàng</h3>
-                    {gold_html}
-                </div>
+        # Thêm đoạn HTML chứa thời gian và 2 bảng
+        market_tables_content = f"""
+        <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
+            Cập nhật: {vn_time}
+        </div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
+                <h3 style="text-align:center;">Thị trường Thế giới</h3>
+                {world_html}
             </div>
-        """, 'html.parser')
+            <div style="flex: 1; min-width: 300px;">
+                <h3 style="text-align:center;">Giá Vàng</h3>
+                {gold_html}
+            </div>
+        </div>
+        """
+        flex_div = BeautifulSoup(market_tables_content, 'html.parser')
         target_div.append(flex_div)
         
         with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
             f.write(str(soup))
-        print("Cập nhật thành công 2 bảng!")
+        print(f"Cập nhật thành công lúc {vn_time}!")
 
 if __name__ == "__main__":
     update_world_table()
