@@ -3,7 +3,7 @@ name: Quick Update Index
 on:
   schedule:
     # Chạy mỗi 15 phút, các ngày T2-T6
-    - cron: '*/15 * * * 1-5'
+    - cron: '0,15,30,45 * * * 1-5'
   workflow_dispatch:
 
 jobs:
