@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cập nhật diễn biến thị trường, chỉ số tài chính và giá vàng mới nhất tại Phúc Bình Scalping.">
     <title>Diễn Biến Thị Trường - Phúc Bình Scalping</title>
     <link rel="icon" type="image/png" href="logo.png">
     <style>
@@ -51,18 +52,16 @@
             max-width: 100%; margin: 0 auto;
         }
 
-        /* --- TỐI ƯU HIỂN THỊ BIỂU ĐỒ TRÊN ĐIỆN THOẠI --- */
         .chart-container { 
             width: 100%; 
-            overflow-x: auto; /* Cho phép cuộn ngang nếu biểu đồ quá rộng */
+            overflow-x: auto; 
             display: flex; 
             justify-content: center; 
         }
         .js-plotly-plot { 
             width: 100% !important; 
-            min-width: 600px; /* Ép độ rộng tối thiểu để không bị dẹp chữ */
+            min-width: 600px; 
         }
-        /* ------------------------------------------- */
 
         .world-index-table, .gold-table {
             width: 100%; border-collapse: collapse; font-size: 13px;
@@ -129,7 +128,14 @@
                     {{CHART_DIEN_BIEN}}
                 </div>
             </div>
-            
+
+            <h2 style="margin-top: 40px; color: #002060;">📈 Chỉ số Việt Nam</h2>
+            <div class="market-update-box">
+                <div class="chart-container">
+                    {{TABLE_VIETNAM}}
+                </div>
+            </div>
+
             <h2 style="margin-top: 40px; color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
             <div id="world-table-container" class="market-update-box">
                 {{TABLE_WORLD}}
