@@ -1,0 +1,65 @@
+name: Auto Fetch Stock Data
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    # --- BUỔI SÁNG (Giờ VN: 09:30 - 11:45 | UTC: 02:30 - 04:45) ---
+    - cron: '20,30,45 2 * * 1-5'
+    - cron: '0,16,30,45 3-4 * * 1-5'
+
+    # --- BUỔI CHIỀU (Giờ VN: 13:15 - 15:05 | UTC: 06:15 - 08:05) ---
+    - cron: '10,20,30,45 6 * * 1-5'
+    - cron: '0,15,30,45 7 * * 1-5'
+    - cron: '0,5 8 * * 1-5'
+
+permissions:
+  contents: write
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas plotly user_agent openpyxl beautifulsoup4
+
+      - name: Execute Python Script
+        run: |
+          python main.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 1. Stash (cất tạm) các file mới được tạo/sửa bởi Python
+          git stash
+          
+          # 2. Pull code mới nhất về để tránh xung đột
+          git pull origin main --rebase
+          
+          # 3. Lấy lại các file dữ liệu đã cất ra
+          git stash pop || true
+          
+          # 4. Stage toàn bộ thay đổi
+          git add .
+          
+          # 5. Kiểm tra và Commit nếu có dữ liệu mới
+          if git diff --staged --quiet; then
+            echo "Không có thay đổi dữ liệu mới, bỏ qua commit."
+          else
+            git commit -m "Cập nhật dữ liệu chứng khoán tự động [skip ci]"
+            git push origin main
+          fi
