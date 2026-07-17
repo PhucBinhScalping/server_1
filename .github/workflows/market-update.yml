@@ -3,7 +3,7 @@ name: Market Update Manager
 on:
   workflow_dispatch:
   schedule:
-    # Chạy mỗi 10 phút, tất cả các ngày trong tuần
+    # Vòng lặp: chạy mỗi 10 phút, Thứ 2 đến Thứ 6
     - cron: '*/10 * * * 1-5'
 
 jobs:
@@ -11,18 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with: {python-version: '3.10'}
+        
       - name: Install dependencies
         run: pip install pandas requests plotly user_agent openpyxl beautifulsoup4 pytz
-      
+
       - name: Run script with time logic
         run: |
-          # Lấy giờ VN
+          # Sử dụng múi giờ Việt Nam để lấy giờ hiện tại
+          # HOUR sẽ trả về từ 00 đến 23
           HOUR=$(TZ="Asia/Ho_Chi_Minh" date +%H)
-          # Nếu giờ từ 9 đến 15 (giờ giao dịch) -> Chạy 'all'
-          # Nếu không -> Chạy 'world'
+          echo "Hiện tại là giờ VN: $HOUR"
+          
+          # Logic: 9h đến 15h (giờ giao dịch) chạy all, còn lại chạy world
           if [ "$HOUR" -ge 9 ] && [ "$HOUR" -lt 16 ]; then
             python main.py all
           else
@@ -35,8 +39,14 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
+          
+          # Chỉ add file cần thiết để tránh add rác hoặc các file bị tạo lỗi
+          git add index.html
+          
+          # Kiểm tra thay đổi và push
           if ! git diff --staged --quiet; then
-            git commit -m "Auto-update market data [skip ci]"
-            git push
+            git commit -m "Auto-update: Market data at $(date +'%Y-%m-%d %H:%M:%S')"
+            git push origin main
+          else
+            echo "Không có dữ liệu mới để cập nhật."
           fi
