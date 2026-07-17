@@ -20,31 +20,22 @@
         .navbar-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: flex-start; }
         .navbar-menu { display: flex; gap: 40px; list-style: none; margin: 0; padding: 0; }
         .navbar-item a { color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; transition: 0.3s; }
-        .navbar-item a:hover, .navbar-item.active a { color: #fff200; }
+        .navbar-item a:hover { color: #fff200; }
     
-        .container { max-width: 1200px; width: 100%; background: rgba(255, 255, 255, 0.2); padding: 40px; border-radius: 25px; backdrop-filter: blur(15px); box-shadow: 0 15px 35px rgba(0,0,0,0.2); text-align: center; box-sizing: border-box; }
+        .container { max-width: 1200px; width: 100%; background: rgba(255, 255, 255, 0.2); padding: 40px; border-radius: 25px; backdrop-filter: blur(15px); text-align: center; }
         h1 { color: #002060; margin-bottom: 30px; font-size: 2.5em; text-transform: uppercase; }
     
-        .market-update-box { background: #ffffff; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 100%; margin: 0 auto; overflow-x: hidden; }
+        .market-update-box { background: #ffffff; padding: 25px; border-radius: 20px; margin-bottom: 30px; }
     
-        /* BẢNG DỮ LIỆU - CỐ ĐỊNH TẠI ĐÂY */
-        .world-index-table, .gold-table { width: 100%; table-layout: fixed; font-size: 13px; border-collapse: collapse; }
-        .world-index-table th, .world-index-table td, .gold-table th, .gold-table td { padding: 8px 4px; word-wrap: break-word; text-align: center; border-bottom: 1px solid #eee; }
-        .world-index-table th, .gold-table th { background-color: #f8f9fa; border-bottom: 2px solid #ddd; }
+        /* CẤU HÌNH BẢNG - GIỮ NGUYÊN ĐỊNH DẠNG */
+        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; }
     
-        .sticky-contact-btn { position: fixed; bottom: 30px; right: 30px; background-color: #002060; color: #ffffff; padding: 15px 25px; border-radius: 50px; border: 2px solid #ffffff; cursor: pointer; z-index: 999; font-weight: bold; animation: pulseAnimation 2s infinite; }
-    
-        /* RESPONSIVE CHO MOBILE */
-        @media screen and (max-width: 768px) {
-            .navbar-menu { gap: 15px; font-size: 14px; flex-wrap: wrap; justify-content: center; }
-            .container { padding: 20px 10px; }
-            h1 { font-size: 1.5em; }
-            .market-update-box { padding: 10px; }
-            .world-index-table, .gold-table { font-size: 11px; } /* Nhỏ lại chút trên mobile */
-            .sticky-contact-btn { padding: 10px 15px; font-size: 14px; bottom: 20px; right: 10px; }
-        }
-    
-        @keyframes pulseAnimation {
+        .sticky-contact-btn { position: fixed; bottom: 30px; right: 30px; background-color: #002060; color: #ffffff; padding: 15px 25px; border-radius: 50px; cursor: pointer; z-index: 999; font-weight: bold; animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0.7); }
             70% { box-shadow: 0 0 0 15px rgba(0, 32, 96, 0); }
             100% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0); }
@@ -79,10 +70,15 @@
                     {{TABLE_VIETNAM}}
                 </div>
             </div>
-
-            <h2 style="margin-top: 40px; color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
-            <div id="world-table-container" class="market-update-box">
-                {{TABLE_WORLD}}
+            
+            <h2 style="color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
+            <div class="market-update-box">
+                <!-- Thêm thẻ div bao quanh này để bảng không bị ép vỡ -->
+                <div class="table-wrapper">
+                    <table class="world-index-table">
+                        {{TABLE_WORLD}}
+                    </table>
+                </div>
             </div>
         </div>
     </div>
