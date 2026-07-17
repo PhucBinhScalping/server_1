@@ -71,11 +71,10 @@ def get_gold_index_html():
     except Exception as e:
         return f"<p>Lỗi tải vàng: {e}</p>"
         
+
 def update_world_table():
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
-    
-    # Lấy giờ Việt Nam
     vn_time = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh')).strftime('%d-%m-%Y %H:%M:%S')
     
     with open(OUTPUT_FILE, 'r', encoding='utf-8') as f:
@@ -85,17 +84,17 @@ def update_world_table():
     
     if target_div:
         target_div.clear()
-        # Thêm đoạn HTML chứa thời gian và 2 bảng
+        # Thay đổi layout thành dạng cột (column) để mobile hiển thị đẹp
         market_tables_content = f"""
-        <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
+        <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 10px; font-style: italic;">
             Cập nhật: {vn_time}
         </div>
-        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
+        <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
+            <div style="width: 100%;">
                 <h3 style="text-align:center;">Thị trường Thế giới</h3>
                 {world_html}
             </div>
-            <div style="flex: 1; min-width: 300px;">
+            <div style="width: 100%;">
                 <h3 style="text-align:center;">Giá Vàng</h3>
                 {gold_html}
             </div>
@@ -106,7 +105,6 @@ def update_world_table():
         
         with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
             f.write(str(soup))
-        print(f"Cập nhật thành công lúc {vn_time}!")
 
 if __name__ == "__main__":
     update_world_table()
