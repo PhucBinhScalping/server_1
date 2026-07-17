@@ -3,18 +3,28 @@ import pandas as pd
 
 def get_data_index():
     try:
+        # 1. Lấy dữ liệu
         re_vni_url = requests.get('https://banggia.cafef.vn/stockhandler.ashx?index=true', timeout=10)
         results_vni = re_vni_url.json()
-        name_map = {'VN-Index': 'VNINDEX', 'VN30-Index': 'VN30', 'HNXINDEX': 'HNX', 'HNX30-Index': 'HNX30', 'HNXUPCOMINDEX': 'UPCOM'}
+        
+        # 2. Tạo DataFrame và lọc chỉ lấy những dòng quan trọng
         df = pd.DataFrame(results_vni)
+        name_map = {'VN-Index': 'VNINDEX', 'VN30-Index': 'VN30', 'HNXINDEX': 'HNX', 'HNX30-Index': 'HNX30', 'HNXUPCOMINDEX': 'UPCOM'}
         df['name'] = df['name'].replace(name_map)
-        df['change'] = pd.to_numeric(df['change'], errors='coerce')
-        df['percent'] = pd.to_numeric(df['percent'], errors='coerce') / 100
-        df['volume'] = df['volume'].astype(str).str.replace(',', '').astype(float)
-        df['value'] = df['value'].astype(str).str.replace(',', '').astype(float)
+        
+        # Chỉ giữ lại các chỉ số chúng ta cần
+        df = df[df['name'].isin(name_map.values())].copy()
+        
+        # Chuyển đổi kiểu dữ liệu an toàn
+        df['change'] = pd.to_numeric(df['change'], errors='coerce').fillna(0)
+        df['percent'] = pd.to_numeric(df['percent'], errors='coerce').fillna(0) / 100
+        df['volume'] = pd.to_numeric(df['volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+        df['value'] = pd.to_numeric(df['value'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
+        df['index'] = pd.to_numeric(df['index'], errors='coerce').fillna(0)
     except Exception as e:
         return f"Lỗi lấy dữ liệu bảng giá: {e}"
 
+    # 3. Lấy dữ liệu lịch sử (giữ nguyên logic của bạn)
     urls = {
         'VNINDEX': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HOSE&Symbol=VNINDEX&PageIndex=1&PageSize=20',
         'VN30': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HOSE&Symbol=VN30INDEX&PageIndex=1&PageSize=20',
@@ -27,32 +37,33 @@ def get_data_index():
     for name, url in urls.items():
         try:
             r = requests.get(url, timeout=5).json()
-            vol = float(str(r['Data']['Data'][1]['KhoiLuongKhopLenh']).replace(',', ''))
-            data_list.append({'name': name, 'volume_2': vol})
+            vol_raw = str(r['Data']['Data'][1]['KhoiLuongKhopLenh']).replace(',', '')
+            data_list.append({'name': name, 'volume_2': float(vol_raw)})
         except:
-            data_list.append({'name': name, 'volume_2': None})
+            data_list.append({'name': name, 'volume_2': 1}) # Tránh chia cho 0
 
+    # 4. Merge và Tính toán
     result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
     result_df['thanh khoản'] = (((result_df['volume'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1)
     
-    # Sắp xếp
+    # 5. Định dạng bảng cuối cùng
     custom_order = ['VNINDEX', 'VN30', 'HNX', 'HNX30', 'UPCOM']
     result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
     result_df = result_df.sort_values('name').set_index('name')
     
-    # Đổi tên cột
-    result_df.columns = ['Chỉ số', 'Thay đổi', '%', 'KL Khớp', 'GT Khớp', 'Thanh khoản %']
+    # Chọn đúng các cột cần thiết, bỏ qua các cột dư thừa từ API
+    final_df = result_df[['index', 'change', 'percent', 'volume', 'value', 'thanh khoản']].copy()
+    final_df.columns = ['Chỉ số', 'Thay đổi', '%', 'KL Khớp', 'GT Khớp', 'Thanh khoản %']
     
-    # Định dạng màu sắc
+    # 6. Style
     def style_cells(val):
         try:
-            v = float(val)
+            v = float(str(val).replace('%', ''))
             color = '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
             return f'color: {color}; font-weight: bold;'
         except: return ''
 
-    # Áp dụng Style
-    styled = result_df.style.applymap(style_cells, subset=['Thay đổi', '%', 'Thanh khoản %']) \
-        .format({'Thay đổi': '{:,.2f}', '%': '{:.2%}', 'Thanh khoản %': '{:.1f}%', 'KL Khớp': '{:,.0f}', 'GT Khớp': '{:,.0f}'})
+    styled = final_df.style.applymap(style_cells, subset=['Thay đổi', '%', 'Thanh khoản %']) \
+        .format({'Chỉ số': '{:,.2f}', 'Thay đổi': '{:,.2f}', '%': '{:.2%}', 'Thanh khoản %': '{:.1f}%', 'KL Khớp': '{:,.0f}', 'GT Khớp': '{:,.0f}'})
         
     return styled.to_html(classes='world-index-table', border=0, justify='center')
