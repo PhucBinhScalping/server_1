@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   schedule:
     # Lịch trình gộp: T2-T6, mỗi 10 phút (đáp ứng yêu cầu của bạn)
-    - cron: '*/10 * * * 1-5'
+    - cron: '*/15 * * * 1-5'
 
 permissions:
   contents: write
