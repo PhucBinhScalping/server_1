@@ -1,0 +1,39 @@
+name: Auto Update Market Data
+
+on:
+  schedule:
+    # Chạy mỗi 10 phút, từ 9:15 đến 15:05, Thứ 2 đến Thứ 6
+    # Lưu ý: GitHub Actions dùng giờ UTC. 
+    # Múi giờ VN là UTC+7, nên 9:15 VN = 2:15 UTC, 15:05 VN = 8:05 UTC.
+    - cron: '15-59/10 2 * * 1-5'
+    - cron: '0-5/10 3-8 * * 1-5'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas requests plotly pytz openpyxl
+          
+      - name: Run update script
+        run: python main.py
+        env:
+          # Nếu code bạn cần kết nối database hoặc API key, thêm ở đây
+          TZ: Asia/Ho_Chi_Minh
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add index.html
+          git commit -m "Update market data: $(date)"
+          git push
