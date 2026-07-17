@@ -1,8 +1,8 @@
-name: Market Update
+name: Market Update (Vietnam Time)
 on:
   workflow_dispatch:
   schedule:
-    # Lịch trình gộp: T2-T6, mỗi 10 phút (đáp ứng yêu cầu của bạn)
+    # Chạy mỗi 15 phút, liên tục các ngày T2-T6
     - cron: '*/15 * * * 1-5'
 
 permissions:
@@ -13,18 +13,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-python@v5
         with: {python-version: '3.10'}
         
       - name: Install dependencies
         run: pip install requests pandas beautifulsoup4 plotly user_agent openpyxl
 
-      - name: Run Scripts
+      - name: Run Scripts (Check Vietnam Time)
         run: |
-          # Chạy lần lượt các script cập nhật
-          python get_index_vn.py
-          python update_index_only.py
-          python main.py
+          # Lấy giờ hiện tại theo UTC, cộng thêm 7 tiếng để ra giờ Việt Nam
+          # Chỉ chạy script nếu giờ Việt Nam nằm trong khoảng 09:00 - 15:15
+          CURRENT_HOUR_VN=$(TZ="Asia/Ho_Chi_Minh" date +%H)
+          
+          if [ "$CURRENT_HOUR_VN" -ge 9 ] && [ "$CURRENT_HOUR_VN" -lt 16 ]; then
+            echo "Trong giờ giao dịch, thực hiện cập nhật..."
+            python get_index_vn.py
+            python main.py
+          else
+            echo "Ngoài giờ giao dịch ($CURRENT_HOUR_VN:00), bỏ qua cập nhật."
+          fi
 
       - name: Commit and Push
         run: |
@@ -32,6 +40,6 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
           if ! git diff --staged --quiet; then
-            git commit -m "Auto-update market data: $(date +'%Y-%m-%d %H:%M:%S')"
+            git commit -m "Auto-update market data: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
             git push origin main
           fi
