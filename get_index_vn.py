@@ -15,7 +15,7 @@ def get_data_index():
         # Lọc danh sách an toàn
         df = df[df['name'].isin(name_map.values())].copy()
         
-        # Chuyển đổi dữ liệu, sử dụng .loc để tránh cảnh báo SettingWithCopy
+        # Chuyển đổi dữ liệu
         df['change'] = pd.to_numeric(df['change'], errors='coerce').fillna(0)
         df['percent'] = pd.to_numeric(df['percent'], errors='coerce').fillna(0) / 100
         df['volume'] = pd.to_numeric(df['volume'].astype(str).str.replace(',', ''), errors='coerce').fillna(0)
@@ -44,29 +44,31 @@ def get_data_index():
         result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
         result_df['thanh khoản'] = (((result_df['volume'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1)
         
-        # 5. Định dạng bảng cuối cùng
+        # 5. Định dạng
         custom_order = ['VNINDEX', 'VN30', 'HNX', 'HNX30', 'UPCOM']
         result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
         result_df = result_df.sort_values('name').set_index('name')
         
-        # BƯỚC QUAN TRỌNG: Đảm bảo chọn đúng 6 cột, nếu thiếu sẽ tự điền 0
         cols_to_use = ['index', 'change', 'percent', 'volume', 'value', 'thanh khoản']
         final_df = result_df.reindex(columns=cols_to_use).fillna(0)
-        
         final_df.columns = ['Chỉ số', 'Thay đổi', '%', 'KL Khớp', 'GT Khớp', 'Thanh khoản %']
         
-        # 6. Style
-        def style_cells(val):
-            try:
-                v = float(str(val).replace('%', ''))
-                color = '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
-                return f'color: {color}; font-weight: bold;'
-            except: return ''
-
-        styled = final_df.style.applymap(style_cells, subset=['Thay đổi', '%', 'Thanh khoản %']) \
-            .format({'Chỉ số': '{:,.2f}', 'Thay đổi': '{:,.2f}', '%': '{:.2%}', 'Thanh khoản %': '{:.1f}%', 'KL Khớp': '{:,.0f}', 'GT Khớp': '{:,.0f}'})
+        # 6. Tạo bảng HTML thủ công (Thay thế cho .style để không cần jinja2)
+        html = '<table class="world-index-table" border="0" style="width:100%; border-collapse:collapse; text-align:center;">'
+        html += '<thead><tr><th>Chỉ số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp</th><th>Thanh khoản %</th></tr></thead><tbody>'
+        
+        for name, row in final_df.iterrows():
+            def get_color(v): return '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
             
-        return styled.to_html(classes='world-index-table', border=0, justify='center', index=True)
+            html += f"<tr><td>{name}</td>"
+            html += f"<td style='color:{get_color(row['Thay đổi'])}; font-weight:bold;'>{row['Thay đổi']:,.2f}</td>"
+            html += f"<td style='color:{get_color(row['%'])}; font-weight:bold;'>{row['%']:.2%}</td>"
+            html += f"<td>{row['KL Khớp']:,.0f}</td>"
+            html += f"<td>{row['GT Khớp']:,.0f}</td>"
+            html += f"<td style='color:{get_color(row['Thanh khoản %'])}; font-weight:bold;'>{row['Thanh khoản %']:.1f}%</td></tr>"
+            
+        html += '</tbody></table>'
+        return html
 
     except Exception as e:
         return f"<p style='color:red;'>Lỗi tải dữ liệu bảng giá: {e}</p>"
