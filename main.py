@@ -1,5 +1,5 @@
 from update_index_only import get_world_index_html, get_gold_index_html
-from index_service import get_data_index
+from get_index_vn import get_data_index
 import pandas as pd
 import requests
 import plotly.graph_objects as io_go
