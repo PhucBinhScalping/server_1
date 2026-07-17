@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   schedule:
     # Chạy mỗi 15 phút, liên tục các ngày T2-T6
-    - cron: '*/15 * * * 1-5'
+    - cron: '0,15,30,45 * * * 1-5'
 
 permissions:
   contents: write
