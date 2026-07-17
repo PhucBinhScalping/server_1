@@ -86,22 +86,23 @@ def update_world_table():
     
     if target_div:
         target_div.clear()
-        # Thay đổi layout thành dạng cột (column) để mobile hiển thị đẹp
         market_tables_content = f"""
-        <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 10px; font-style: italic;">
+        <!-- Dòng thời gian cập nhật chung cho cả 2 bảng -->
+        <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
             Cập nhật: {vn_time}
         </div>
-        <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
-            <div style="width: 100%;">
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
                 <h3 style="text-align:center;">Thị trường Thế giới</h3>
                 {world_html}
             </div>
-            <div style="width: 100%;">
+            <div style="flex: 1; min-width: 300px;">
                 <h3 style="text-align:center;">Giá Vàng</h3>
                 {gold_html}
             </div>
         </div>
-        """
+    """
         flex_div = BeautifulSoup(market_tables_content, 'html.parser')
         target_div.append(flex_div)
         
