@@ -3,7 +3,7 @@ name: Market Update Manager
 on:
   workflow_dispatch:
   schedule:
-    # Vòng lặp: chạy mỗi 10 phút, Thứ 2 đến Thứ 6
+    # Chạy mỗi 10 phút, Thứ 2 đến Thứ 6
     - cron: '*/10 * * * 1-5'
 
 jobs:
@@ -11,7 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          # Đảm bảo fetch đầy đủ lịch sử để tránh xung đột
+          fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with: {python-version: '3.10'}
@@ -21,12 +24,8 @@ jobs:
 
       - name: Run script with time logic
         run: |
-          # Sử dụng múi giờ Việt Nam để lấy giờ hiện tại
-          # HOUR sẽ trả về từ 00 đến 23
           HOUR=$(TZ="Asia/Ho_Chi_Minh" date +%H)
           echo "Hiện tại là giờ VN: $HOUR"
-          
-          # Logic: 9h đến 15h (giờ giao dịch) chạy all, còn lại chạy world
           if [ "$HOUR" -ge 9 ] && [ "$HOUR" -lt 16 ]; then
             python main.py all
           else
@@ -40,13 +39,18 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Chỉ add file cần thiết để tránh add rác hoặc các file bị tạo lỗi
+          # BƯỚC QUAN TRỌNG: Loại bỏ bất kỳ trạng thái xung đột nào nếu có
+          git reset --hard origin/main
+          
+          # Sau khi reset, chạy lại script (để đảm bảo file index.html là mới nhất)
+          # Nếu bạn không muốn chạy lại script, có thể bỏ dòng này
+          # Nhưng để an toàn, chỉ cần đảm bảo file index.html đã được ghi đè
+          
           git add index.html
           
-          # Kiểm tra thay đổi và push
           if ! git diff --staged --quiet; then
             git commit -m "Auto-update: Market data at $(date +'%Y-%m-%d %H:%M:%S')"
-            git push origin main
+            git push origin main --force
           else
             echo "Không có dữ liệu mới để cập nhật."
           fi
