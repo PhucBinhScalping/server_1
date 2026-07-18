@@ -21,7 +21,16 @@
         .main-wrapper { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; width: 100%; }
         .container { max-width: 1200px; width: 100%; background: rgba(255, 255, 255, 0.2); padding: 40px; border-radius: 25px; backdrop-filter: blur(15px); text-align: center; }
         h1 { color: #002060; margin-bottom: 30px; font-size: 2.5em; text-transform: uppercase; }
-        .market-update-box { background: #ffffff; padding: 25px; border-radius: 20px; margin-bottom: 30px; width: 100%; overflow: hidden; }
+        
+        /* Khung trắng chứa dữ liệu */
+        .market-update-box { 
+            background: #ffffff; 
+            padding: 25px; 
+            border-radius: 20px; 
+            margin-bottom: 30px; 
+            width: 100%; 
+            overflow: hidden; 
+        }
 
         /* --- NAVBAR --- */
         .navbar { position: sticky; top: 0; width: 100%; background: #002060; z-index: 1000; padding: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
@@ -30,8 +39,8 @@
         .navbar-item a { color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; }
         .navbar-item a:hover { color: #fff200; }
 
-        /* --- TABLES & CHARTS --- */
-        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        /* --- TABLES & CHARTS ON PC --- */
+        .table-wrapper { width: 100%; overflow: hidden; }
         table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 14px; }
         th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eee; }
         th { background-color: #f8f9fa; }
@@ -44,7 +53,7 @@
             100% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0); }
         }
 
-        /* --- MOBILE RESPONSIVE --- */
+        /* --- MOBILE RESPONSIVE (XỬ LÝ CO CỤM NGUYÊN KHỐI) --- */
         @media (max-width: 768px) {
             .main-wrapper { padding: 15px 10px; }
             .container { padding: 15px; border-radius: 15px; }
@@ -52,15 +61,33 @@
             .navbar-menu { gap: 15px; justify-content: center; }
             .navbar-item a { font-size: 13px; }
             
-            /* Ép mã nguồn Python co gọn nguyên khối */
-            .market-update-box *, .table-wrapper * {
-                max-width: 100% !important;
-                width: 100% !important;
-                height: auto !important;
-                box-sizing: border-box !important;
+            /* Giảm bớt padding của khung trắng để chừa không gian cho biểu đồ */
+            .market-update-box { padding: 10px; border-radius: 15px; }
+
+            /* BẬT CHẾ ĐỘ SCALE NGUYÊN KHỐI CHO CÁC THÀNH PHẦN TỪ PYTHON CHÈN VÀO */
+            .market-update-box iframe,
+            .market-update-box div,
+            .market-update-box table,
+            .table-wrapper iframe,
+            .table-wrapper table {
+                width: 750px !important; /* Định nghĩa độ rộng chuẩn PC giả lập để Python không làm vỡ chữ */
+                max-width: none !important;
+                min-width: 0 !important;
+                transform: scale(0.48) !important; /* Thu nhỏ đều về ~48% để vừa khít màn hình điện thoại */
+                transform-origin: top left !important; /* Giữ điểm neo cố định ở góc trên bên trái */
+                display: block !important;
             }
-            table { min-width: 100% !important; font-size: 11px !important; }
-            th, td { padding: 6px 4px !important; }
+
+            /* Tạo khoảng bù trừ chiều cao sau khi scale để không bị trống một khoảng trắng lớn phía dưới */
+            .market-update-box {
+                display: block;
+                height: auto;
+                max-height: 480px; /* Khống chế chiều cao hiển thị vừa vặn của khung trắng */
+            }
+            
+            /* Điều chỉnh riêng cho khu vực bảng thế giới nếu cần */
+            table { font-size: 12px !important; }
+            th, td { padding: 8px 4px !important; }
         }
     </style>
 </head>
