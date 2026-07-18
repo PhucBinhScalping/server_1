@@ -12,6 +12,9 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #f9c851, #f15238);
             margin: 0; padding: 0; min-height: 100vh; color: #000000;
+            /* CHỐNG TRÀN TOÀN TRANG TRÊN MOBILE */
+            max-width: 100%;
+            overflow-x: hidden;
         }
     
         .main-wrapper { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; width: 100%; box-sizing: border-box; }
@@ -22,10 +25,10 @@
         .navbar-item a { color: #ffffff; text-decoration: none; font-size: 16px; font-weight: bold; transition: 0.3s; }
         .navbar-item a:hover { color: #fff200; }
     
-        .container { max-width: 1200px; width: 100%; background: rgba(255, 255, 255, 0.2); padding: 40px; border-radius: 25px; backdrop-filter: blur(15px); text-align: center; }
+        .container { max-width: 1200px; width: 100%; background: rgba(255, 255, 255, 0.2); padding: 40px; border-radius: 25px; backdrop-filter: blur(15px); text-align: center; box-sizing: border-box; }
         h1 { color: #002060; margin-bottom: 30px; font-size: 2.5em; text-transform: uppercase; }
     
-        .market-update-box { background: #ffffff; padding: 25px; border-radius: 20px; margin-bottom: 30px; }
+        .market-update-box { background: #ffffff; padding: 25px; border-radius: 20px; margin-bottom: 30px; box-sizing: border-box; width: 100%; }
     
         /* CẤU HÌNH BẢNG - GIỮ NGUYÊN ĐỊNH DẠNG */
         .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -39,6 +42,30 @@
             0% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0.7); }
             70% { box-shadow: 0 0 0 15px rgba(0, 32, 96, 0); }
             100% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0); }
+        }
+
+        /* ----------------------------------------------------------------- */
+        /* CẤU HÌNH ĐẶC BIỆT DÀNH RIÊNG CHO ĐIỆN THOẠI (MOBILE)               */
+        /* ----------------------------------------------------------------- */
+        @media (max-width: 768px) {
+            .main-wrapper { padding: 15px 10px; }
+            .container { padding: 15px; border-radius: 15px; }
+            h1 { font-size: 1.6em; margin-bottom: 15px; }
+            .market-update-box { padding: 10px; border-radius: 15px; overflow: hidden; }
+            
+            /* ÉP BIỂU ĐỒ HOẶC BẢNG BÊN TRONG TỰ ĐỘNG CO NHỎ LẠI THEO TỶ LỆ MÀN HÌNH */
+            .market-update-box > iframe, 
+            .market-update-box > img, 
+            .market-update-box > div,
+            .market-update-box > table {
+                max-width: 100% !important;
+                height: auto !important;
+                object-fit: contain;
+            }
+
+            /* Thanh điều hướng menu trên mobile xích lại gần nhau hơn cho đẹp */
+            .navbar-menu { gap: 15px; justify-content: center; }
+            .navbar-item a { font-size: 13px; }
         }
     </style>
 </head>
@@ -73,7 +100,6 @@
             
             <h2 style="color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
             <div class="market-update-box">
-                <!-- Thêm thẻ div bao quanh này để bảng không bị ép vỡ -->
                 <div class="table-wrapper">
                     <table class="world-index-table">
                         {{TABLE_WORLD}}
@@ -82,6 +108,7 @@
             </div>
         </div>
     </div>
+
 
     <div class="modal-overlay" id="contactModal">
         <div class="modal-box">
