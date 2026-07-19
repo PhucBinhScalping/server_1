@@ -50,7 +50,7 @@ def get_data_index():
                 history_list = r.get('Data', {}).get('Data', [])
                 
                 if len(history_list) > 1:
-                    # history_list[0] là hôm nay, history_list[1] là phiên trước đó
+                    # history_list[0] là hôm nay/phiên mới nhất, history_list[1] là phiên trước đó
                     prev_day = history_list[1]
                     
                     vol_raw = str(prev_day.get('KhoiLuongKhopLenh', '1')).replace(',', '')
@@ -64,20 +64,20 @@ def get_data_index():
                 else:
                     data_list.append({'name': name, 'volume_2': 1.0, 'value_2': 1.0})
             except Exception as e:
-                # Nếu lỗi mạng hoặc lỗi parse thì gán giá trị tránh crash
                 data_list.append({'name': name, 'volume_2': 1.0, 'value_2': 1.0})
 
         # 4. Merge và Tính toán
         result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
         result_df['Thanh khoản %'] = (((result_df['KL Khớp'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1)
-        result_df['value/value %'] = (((result_df['GT Khớp'] - result_df['value_2']) / result_df['value_2']) * 100).round(1)
+        # Sửa lại đồng bộ tên cột tính toán ở đây thành 'Thay đổi GT %'
+        result_df['Thay đổi GT %'] = (((result_df['GT Khớp'] - result_df['value_2']) / result_df['value_2']) * 100).round(1)
         
         # 5. Định dạng lại bảng
         custom_order = ['VNINDEX', 'VN30', 'HNX', 'HNX30', 'UPCOM']
         result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
         final_df = result_df.sort_values('name').set_index('name')
         
-        # 6. Tạo bảng HTML (Thêm tiêu đề cột mới)
+        # 6. Tạo bảng HTML
         html = '<table class="world-index-table" border="0" style="width:100%; border-collapse:collapse; text-align:center;">'
         html += '<thead><tr><th>Chỉ số</th><th>Điểm số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp</th><th>Thanh khoản %</th><th>Thay đổi GT %</th></tr></thead><tbody>'
         
@@ -91,7 +91,6 @@ def get_data_index():
             html += f"<td>{row['KL Khớp']:,.0f}</td>"
             html += f"<td>{row['GT Khớp']:,.0f}</td>"
             html += f"<td style='color:{get_color(row['Thanh khoản %'])}; font-weight:bold;'>{row['Thanh khoản %']:.1f}%</td>"
-            # Thêm dữ liệu cột Thay đổi Giá trị % vào bảng
             html += f"<td style='color:{get_color(row['Thay đổi GT %'])}; font-weight:bold;'>{row['Thay đổi GT %']:.1f}%</td></tr>"
             
         html += '</tbody></table>'
