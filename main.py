@@ -43,11 +43,8 @@ def tinh_du_lieu_cp(symbol):
         return None
 
 def main():
-    # 1. Xử lý dữ liệu bảng Chỉ số VN
-    try:
-        table_vietnam_html = get_data_index() 
-    except Exception as e:
-        table_vietnam_html = f"<p>Lỗi tải dữ liệu VNI: {e}</p>"
+    # 1. Gọi module Việt Nam từ file get_index_vn.py tách biệt
+    table_vietnam_html = get_data_index() 
         
     df_config = pd.read_excel(FILE_DANH_SACH)
     df_config['Ngành Cấp 2'] = df_config['Ngành Cấp 2'].astype(str).str.strip().str.upper()
@@ -57,7 +54,7 @@ def main():
     ds_nganh = df_config['Ngành Cấp 2'].dropna().unique()
     
     for nganh in ds_nganh:
-        tickers = df_config[df_config['Ngành Cấp 2'] == nganh]['Ticker'].unique()
+        tickers = df_config[df_config['Nganh Cấp 2'] == nganh]['Ticker'].unique()
         with ThreadPoolExecutor(max_workers=10) as executor:
             data_nganh = [x for x in list(executor.map(tinh_du_lieu_cp, tickers)) if x is not None]
         
@@ -78,7 +75,6 @@ def main():
     vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
     
-    # 2. Vẽ biểu đồ biến động ngành
     colors = ['#198754' if x > 0 else '#dc3545' for x in df_final['percent_change']]
     
     fig = io_go.Figure()
@@ -95,14 +91,13 @@ def main():
         autosize=True              
     )
 
-    # Đọc mẫu template gốc
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read()
 
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Định nghĩa đồng bộ class css như bảng Thế giới)
+    # Bọc khung chống tràn CSS cho bảng Việt Nam
     vietnam_block_html = f"""
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
         Cập nhật: {time_str}
@@ -115,7 +110,6 @@ def main():
     </div>
     """
     
-    # 4. Xử lý khối dữ liệu Quốc tế & Giá Vàng
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
@@ -139,12 +133,10 @@ def main():
     </div>
     """
     
-    # Thay thế dữ liệu một loạt vào HTML tổng
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
     html = html.replace('{{TABLE_VIETNAM}}', vietnam_block_html)
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
     
-    # 5. Ghi dữ liệu ra file thành phẩm index.html
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
         
