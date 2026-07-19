@@ -97,18 +97,15 @@ def main():
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    # Bọc khung chống tràn CSS cho bảng Việt Nam
+    
+    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Rút gọn tối đa, tận dụng class có sẵn trong template)
     vietnam_block_html = f"""
-    <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
+    <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 5px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
-    
-    <div class="market-section" style="margin-bottom: 30px;">
-        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-            {table_vietnam_html}
-        </div>
-    </div>
+    {table_vietnam_html}
     """
+
     
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
