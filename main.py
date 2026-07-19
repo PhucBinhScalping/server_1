@@ -32,8 +32,8 @@ def tinh_du_lieu_cp(symbol):
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        # Lọc thanh khoản trung bình 100000 phiên (giảm xuống 1000 để lấy nhiều mã hơn)
-        if df['volume'].tail(100).mean() < 90000:
+        # Lọc thanh khoản trung bình phiên 100000/phiên
+        if df['volume'].tail(100).mean() < 100000:
             return None
 
         # Lấy dữ liệu phiên gần nhất thay vì bắt buộc phải là "hôm nay" để tránh lỗi cuối tuần
@@ -79,9 +79,12 @@ def main():
         return
 
     df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
-    vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     
-    # Vẽ biểu đồ
+    # Định nghĩa thời gian chuẩn khu vực Việt Nam
+    vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
+    time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
+    
+    # 2. Vẽ biểu đồ biến động ngành
     colors = ['#198754' if x > 0 else '#dc3545' for x in df_final['percent_change']]
     
     fig = io_go.Figure()
@@ -89,38 +92,44 @@ def main():
     fig.add_trace(io_go.Scatter(x=df_final['name'], y=df_final['volume_ratio'], yaxis='y2', line=dict(color='#FFD700', width=3), name='KL/TB21'))
     
     fig.update_layout(
-        title=f"Biến động ngành {vn_now.strftime('%d-%m-%Y %H:%M:%S')}",
+        title=f"Biến động ngành {time_str}",
         paper_bgcolor='#333333', plot_bgcolor='#333333', font=dict(color='white'),
         height=500, margin=dict(l=20, r=20, t=50, b=120),
         yaxis=dict(title='BĐ giá (%)'),
         yaxis2=dict(title='KL/TB21', overlaying='y', side='right'),
-        xaxis=dict(tickangle=-45), # Nghiêng nhãn ngành
-        autosize=True              # BẬT TỰ ĐỘNG DIỆN TÍCH PHÙ HỢP
+        xaxis=dict(tickangle=-45), 
+        autosize=True              
     )
-    
-    # Ghi file
+
+    # Đọc mẫu template gốc
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read()
 
-    # XUẤT HTML PLOTLY CÓ ĐÍNH KÈM PHẦN RESPONSIVE TRÊN MOBILE
+    # Tạo mã HTML cho biểu đồ Plotly có responsive
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
-    html = html.replace('{{TABLE_VIETNAM}}', table_vietnam_html)
-    time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
+    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Đúng thứ tự khai báo biến)
+    vietnam_block_html = f"""
+    <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
+        Cập nhật: {time_str}
+    </div>
+    {table_vietnam_html}
+    """
     
+    # Thay thế dữ liệu khối Việt Nam
+    html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
+    html = html.replace('{{TABLE_VIETNAM}}', vietnam_block_html)
+    
+    # 4. Xử lý khối dữ liệu Quốc tế & Giá Vàng
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
-    # === THAY THẾ TOÀN BỘ ĐOẠN MARKET_TABLES_CONTENT CŨ THÀNH ĐOẠN NÀY ===
     market_tables_content = f"""
-    <!-- Dòng thời gian cập nhật chung cho cả 2 bảng -->
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
     
-    <!-- Tách biệt hoàn toàn khối Thế giới -->
     <div class="market-section" style="margin-bottom: 30px;">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Thị trường Thế giới</h3>
         <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
@@ -128,7 +137,6 @@ def main():
         </div>
     </div>
 
-    <!-- Tách biệt hoàn toàn khối Giá Vàng -->
     <div class="market-section">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Giá Vàng</h3>
         <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
@@ -137,12 +145,14 @@ def main():
     </div>
     """
     
-    # Thay thế Bảng chỉ số thế giới
+    # Thay thế khối Thế giới
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
     
+    # 5. Ghi dữ liệu ra file thành phẩm index.html
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         f.write(html)
-    print("Cập nhật thành công!")
+        
+    print(f"Cập nhật thành công vào lúc: {time_str}!")
 
 if __name__ == "__main__":
     main()
