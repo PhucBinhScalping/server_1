@@ -1,7 +1,6 @@
 import requests
 import pandas as pd
 from datetime import datetime
-import pytz
 
 def get_data_index():
     # 1. Lấy dữ liệu CafeF hiện tại
@@ -21,13 +20,12 @@ def get_data_index():
             
         df['change'] = pd.to_numeric(df['change'], errors='coerce').fillna(0)
         df['percent'] = pd.to_numeric(df['percent'], errors='coerce').fillna(0) / 100
-        
         df['volume'] = df['volume'].astype(str).str.replace(',', '', regex=False).astype(float).fillna(0)
         df['value'] = df['value'].astype(str).str.replace(',', '', regex=False).astype(float).fillna(0)
     except Exception as e:
         return f"<p style='color:red;'>Lỗi lấy dữ liệu bảng giá: {e}</p>"
 
-    # 2. Định nghĩa URLs lấy lịch sử
+    # 2. Lấy dữ liệu lịch sử phiên trước để so sánh thanh khoản
     urls = {
         'VNINDEX': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HOSE&Symbol=VNINDEX&PageIndex=1&PageSize=20',
         'VN30': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HOSE&Symbol=VN30INDEX&PageIndex=1&PageSize=20',
@@ -41,73 +39,41 @@ def get_data_index():
         try:
             r = requests.get(url, timeout=5).json()
             history_list = r.get('Data', [])
+            prev_day = history_list[1] if len(history_list) > 1 else (history_list[0] if history_list else {})
             
-            # An toàn dữ liệu: Nếu mảng lịch sử có từ 2 phần tử trở lên mới lấy phần tử thứ 2, ngược lại lấy phần tử thứ 1
-            if len(history_list) > 1:
-                prev_day = history_list[1]
-            elif len(history_list) == 1:
-                prev_day = history_list[0]
-            else:
-                prev_day = {}
-                
             vol_raw = str(prev_day.get('KhoiLuongKhopLenh', '0')).replace(',', '')
             val_raw = str(prev_day.get('GiaTriKhopLenh', '0')).replace(',', '')
             
             v_2 = float(vol_raw) if vol_raw and float(vol_raw) > 0 else 1.0
             val_2 = float(val_raw) if val_raw and float(val_raw) > 0 else 1.0
-            
             data_list.append({'name': name, 'volume_2': v_2, 'value_2': val_2})
-        except Exception:
+        except:
             data_list.append({'name': name, 'volume_2': 1.0, 'value_2': 1.0})
 
-    # 3. Merge và Tính toán phần trăm biến động
+    # 3. Tính toán 8 cột dữ liệu đầy đủ
     result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
-    result_df['Thanh khoản %'] = (((result_df['volume'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1)
-    result_df['Thay đổi GT %'] = (((result_df['value'] - result_df['value_2']) / result_df['value_2']) * 100).round(1)
+    result_df['Thanh khoản %'] = (((result_df['volume'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1).fillna(0)
+    result_df['Thay đổi GT %'] = (((result_df['value'] - result_df['value_2']) / result_df['value_2']) * 100).round(1).fillna(0)
     
-    # Fill NaN nếu có lỗi phát sinh toán học để bảng không bị lỗi cấu trúc dữ liệu chuỗi f-string
-    result_df['Thanh khoản %'] = result_df['Thanh khoản %'].fillna(0)
-    result_df['Thay đổi GT %'] = result_df['Thay đổi GT %'].fillna(0)
+    # Định dạng hiển thị số liệu đẹp mắt trước khi render
+    result_df['Chỉ số'] = result_df['name']
+    result_df['Điểm số'] = result_df['diem_so'].apply(lambda x: f"{x:,.2f}")
+    result_df['Thay đổi'] = result_df['change'].apply(lambda x: f"{x:,.2f}")
+    result_df['%'] = result_df['percent'].apply(lambda x: f"{x:.2%}")
+    result_df['KL Khớp'] = result_df['volume'].apply(lambda x: f"{x:,.0f}")
+    result_df['GT Khớp'] = result_df['value'].apply(lambda x: f"{x:,.0f}")
+    result_df['Thanh khoản %'] = result_df['Thanh khoản %'].apply(lambda x: f"{x}%")
+    result_df['Thay đổi GT %'] = result_df['Thay đổi GT %'].apply(lambda x: f"{x}%")
     
-    # 4. Định dạng thứ tự bảng
+    # Sắp xếp thứ tự các sàn đúng chuẩn
     custom_order = ['VNINDEX', 'VN30', 'HNX', 'HNX30', 'UPCOM']
-    result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
-    final_df = result_df.sort_values('name')
-        
-    # 5. Sinh bảng HTML với biến độc lập tránh lỗi xung đột dấu nháy chuỗi f-string
-    html = """
-    <table border="0">
-        <thead>
-            <tr>
-                <th>Chỉ số</th>
-                <th>Điểm số</th>
-                <th>Thay đổi</th>
-                <th>%</th>
-                <th>KL Khớp</th>
-                <th>GT Khớp</th>
-                <th>Thanh khoản %</th>
-                <th>Thay đổi GT %</th>
-            </tr>
-        </thead>
-        <tbody>
-    """
+    result_df['Chỉ số'] = pd.Categorical(result_df['Chỉ số'], categories=custom_order, ordered=True)
+    result_df = result_df.sort_values('Chỉ số')
+
+    # Trích xuất đúng 8 cột cần hiển thị
+    cols_to_show = ['Chỉ số', 'Điểm số', 'Thay đổi', '%', 'KL Khớp', 'GT Khớp', 'Thanh khoản %', 'Thay đổi GT %']
+    final_df = result_df[cols_to_show]
     
-    for _, row in final_df.iterrows():
-        def get_color(v): return '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
-        
-        val_tk = row['Thanh khoản %']
-        val_gt = row['Thay đổi GT %']
-        
-        html += "<tr>"
-        html += f"<td style='font-weight:bold;'>{row['name']}</td>"
-        html += f"<td style='font-weight:bold;'>{row['diem_so']:,.2f}</td>" 
-        html += f"<td style='color:{get_color(row['change'])}; font-weight:bold;'>{row['change']:,.2f}</td>"
-        html += f"<td style='color:{get_color(row['percent'])}; font-weight:bold;'>{row['percent']:.2%}</td>"
-        html += f"<td>{row['volume']:,.0f}</td>"
-        html += f"<td>{row['value']:,.0f}</td>"
-        html += f"<td style='color:{get_color(val_tk)}; font-weight:bold;'>{val_tk:.1f}%</td>"
-        html += f"<td style='color:{get_color(val_gt)}; font-weight:bold;'>{val_gt:.1f}%</td>"
-        html += "</tr>"
-        
-    html += '</tbody></table>'
-    return html
+    # 4. Tự động sinh mã HTML từ DataFrame (Tuyệt đối không lệch cột)
+    html_output = final_df.to_html(index=False, border=0, classes='table_vn')
+    return html_output
