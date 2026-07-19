@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import pytz
 from concurrent.futures import ThreadPoolExecutor
 
-# Cấu hình
+# Cấu hình hệ thống
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 TEMPLATE_FILE = "template.html"
 OUTPUT_FILE = "index.html"
@@ -43,7 +43,7 @@ def tinh_du_lieu_cp(symbol):
         return None
 
 def main():
-    # 1. Gọi module Việt Nam từ file get_index_vn.py tách biệt
+    # 1. Gọi module Việt Nam từ file get_index_vn.py (Đã tách riêng bảo trì)
     table_vietnam_html = get_data_index() 
         
     df_config = pd.read_excel(FILE_DANH_SACH)
@@ -54,7 +54,7 @@ def main():
     ds_nganh = df_config['Ngành Cấp 2'].dropna().unique()
     
     for nganh in ds_nganh:
-        tickers = df_config[df_config['Nganh Cấp 2'] == nganh]['Ticker'].unique()
+        tickers = df_config[df_config['Ngành Cấp 2'] == nganh]['Ticker'].unique()
         with ThreadPoolExecutor(max_workers=10) as executor:
             data_nganh = [x for x in list(executor.map(tinh_du_lieu_cp, tickers)) if x is not None]
         
@@ -67,7 +67,7 @@ def main():
             })
 
     if not results:
-        print("Không có dữ liệu.")
+        print("Không có dữ liệu cổ phiếu ngành.")
         return
 
     df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
@@ -97,15 +97,13 @@ def main():
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    
-    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Rút gọn tối đa, tận dụng class có sẵn trong template)
+    # 2. Tạo khối HTML Việt Nam (Rút gọn sạch sẽ, khớp theo template bảo vệ thanh cuộn)
     vietnam_block_html = f"""
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 5px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
     {table_vietnam_html}
     """
-
     
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
@@ -115,14 +113,14 @@ def main():
         Cập nhật: {time_str}
     </div>
     
-    <div class="market-section" style="margin-bottom: 30px;">
+    <div class="market-section" style="margin-bottom: 30px; width: 100%;">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Thị trường Thế giới</h3>
         <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             {world_html}
         </div>
     </div>
 
-    <div class="market-section">
+    <div class="market-section" style="width: 100%;">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Giá Vàng</h3>
         <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             {gold_html}
@@ -130,6 +128,7 @@ def main():
     </div>
     """
     
+    # Thay thế dữ liệu vào Template mẫu
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
     html = html.replace('{{TABLE_VIETNAM}}', vietnam_block_html)
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
