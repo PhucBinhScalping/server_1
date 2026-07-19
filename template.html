@@ -79,10 +79,16 @@
             
             .market-update-box { padding: 10px !important; border-radius: 15px !important; width: 100% !important; overflow: hidden !important; }
             
-            /* Ép bảng hiển thị vừa vặn, không đẩy khung */
-            table { min-width: 500px !important; font-size: 12px !important; }
-            th, td { padding: 8px 4px !important; }
-
+            table { 
+                min-width: 500px !important; 
+                width: 100% !important;
+                table-layout: auto !important; /* Ép trình duyệt tự tính toán đều các cột */
+                font-size: 12px !important; 
+            }
+            th, td { 
+                padding: 8px 4px !important; 
+                white-space: nowrap !important; /* Ngăn chữ bị xuống dòng làm nát bảng */
+            }
             /* THỦ THUẬT QUYẾT ĐỊNH: Ép toàn bộ các thẻ con nội bộ của Plotly/Ảnh phải nằm đúng trong tầm kiểm soát */
             .content-scroll-wrapper div, 
             .content-scroll-wrapper opacity, 
