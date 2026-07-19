@@ -17,8 +17,8 @@ def get_world_index_html():
         remove_list = ['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)']
         df = df[~df['name'].isin(remove_list)]
         
-        # Thêm div bọc ngoài để hỗ trợ cuộn trên điện thoại
-        html = '<div class="table-wrapper"><table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
+        # Tạo bảng cơ bản, loại bỏ các class bọc thừa
+        html = '<table><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
         for _, row in df.iterrows():
             try:
                 change_pct = float(str(row['change_percent']).replace(',', ''))
@@ -31,7 +31,7 @@ def get_world_index_html():
                 <td style='color:{color}'>{row['change_price']}</td>
                 <td style='color:{color}'>{row['change_percent']}%</td>
             </tr>"""
-        html += '</table></div>'
+        html += '</table>'
         return html
     except:
         return "Lỗi tải dữ liệu"
@@ -48,8 +48,7 @@ def get_gold_index_html():
         df['Percent_val'] = pd.to_numeric(df['Percent'].str.replace('%', '').str.replace(',', ''), errors='coerce')
         df['Last_clean'] = df['Last'].str.replace('N', '').str.strip()
         
-        # Thêm div bọc ngoài tương tự để hỗ trợ responsive
-        html = '<div class="table-wrapper"><table class="gold-table"><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
+        html = '<table><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
         
         for _, row in df.iterrows():
             try:
@@ -65,7 +64,7 @@ def get_gold_index_html():
                 <td style='color:{color}'>{row['Percent']}</td>
             </tr>"""
         
-        html += '</table></div>'
+        html += '</table>'
         return html
     except Exception as e:
         return f"<p>Lỗi tải vàng: {e}</p>"
@@ -82,18 +81,22 @@ def update_world_table():
     
     if target_div:
         target_div.clear()
+        # Thay thế cấu trúc flex cũ bằng cấu trúc khối dọc độc lập có chống tràn
         market_tables_content = f"""
         <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
             Cập nhật: {vn_time}
         </div>
         
-        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 280px; padding-bottom: 20px;">
-                <h3 style="text-align:center; margin-bottom: 10px;">Thị trường Thế giới</h3>
+        <div class="market-section" style="margin-bottom: 30px; width: 100%;">
+            <h3 style="text-align:center; margin-bottom: 12px; color: #002060;">Thị trường Thế giới</h3>
+            <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
                 {world_html}
             </div>
-            <div style="flex: 1; min-width: 280px;">
-                <h3 style="text-align:center; margin-bottom: 10px;">Giá Vàng</h3>
+        </div>
+        
+        <div class="market-section" style="width: 100%;">
+            <h3 style="text-align:center; margin-bottom: 12px; color: #002060;">Giá Vàng</h3>
+            <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
                 {gold_html}
             </div>
         </div>
