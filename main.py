@@ -16,7 +16,6 @@ session = requests.Session()
 
 def tinh_du_lieu_cp(symbol):
     vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-    # Lấy dữ liệu 150 ngày
     ngay_start = (datetime.now(vn_tz) - timedelta(days=150)).strftime("%Y-%m-%d")
     url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_start}&size=150&page=1'
     
@@ -32,13 +31,10 @@ def tinh_du_lieu_cp(symbol):
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        # Lọc thanh khoản trung bình phiên 100000/phiên
         if df['volume'].tail(100).mean() < 100000:
             return None
 
-        # Lấy dữ liệu phiên gần nhất thay vì bắt buộc phải là "hôm nay" để tránh lỗi cuối tuần
         last = df.iloc[-1]
-        
         vol_mean_21 = df['volume'].tail(21).mean()
         kl_tb21 = (last['volume'] / vol_mean_21) if vol_mean_21 > 0 else 0
         
@@ -54,7 +50,6 @@ def main():
         table_vietnam_html = f"<p>Lỗi tải dữ liệu VNI: {e}</p>"
         
     df_config = pd.read_excel(FILE_DANH_SACH)
-    # Chuẩn hóa tên ngành để tránh lỗi sai sót dữ liệu
     df_config['Ngành Cấp 2'] = df_config['Ngành Cấp 2'].astype(str).str.strip().str.upper()
     df_config.loc[df_config['Ticker'].isin(['VIC', 'VRE', 'VHM', 'VPL']), 'Ngành Cấp 2'] = 'VINGROUP'
     
@@ -80,7 +75,6 @@ def main():
 
     df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
     
-    # Định nghĩa thời gian chuẩn khu vực Việt Nam
     vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
     
@@ -105,21 +99,20 @@ def main():
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read()
 
-    # Tạo mã HTML cho biểu đồ Plotly có responsive
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Đã bọc div cuộn độc lập bảo vệ cột 8)
+    # 3. Tạo khối HTML Việt Nam hoàn chỉnh bọc div cuộn chống tràn di động
     vietnam_block_html = f"""
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
-    <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 20px;">
+    <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
         {table_vietnam_html}
     </div>
     """
     
-    # 4. Xử lý khối dữ liệu Quốc tế & Giá Vàng (Cấu trúc các khối div độc lập rõ ràng)
+    # 4. Xử lý khối dữ liệu Quốc tế & Giá Vàng
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
@@ -130,20 +123,20 @@ def main():
     
     <div class="market-section" style="margin-bottom: 30px;">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Thị trường Thế giới</h3>
-        <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             {world_html}
         </div>
     </div>
 
     <div class="market-section">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Giá Vàng</h3>
-        <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             {gold_html}
         </div>
     </div>
     """
     
-    # Thay thế dữ liệu vào template một lượt
+    # Thay thế dữ liệu một loạt vào HTML tổng
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
     html = html.replace('{{TABLE_VIETNAM}}', vietnam_block_html)
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
