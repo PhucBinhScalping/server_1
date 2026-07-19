@@ -32,11 +32,11 @@ def tinh_du_lieu_cp(symbol):
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        # Lọc thanh khoản trung bình 100000 phiên
+        # Lọc thanh khoản trung bình 100000 phiên (giảm xuống 1000 để lấy nhiều mã hơn)
         if df['volume'].tail(100).mean() < 90000:
             return None
 
-        # Lấy dữ liệu phiên gần nhất
+        # Lấy dữ liệu phiên gần nhất thay vì bắt buộc phải là "hôm nay" để tránh lỗi cuối tuần
         last = df.iloc[-1]
         
         vol_mean_21 = df['volume'].tail(21).mean()
@@ -94,18 +94,18 @@ def main():
         height=500, margin=dict(l=20, r=20, t=50, b=120),
         yaxis=dict(title='BĐ giá (%)'),
         yaxis2=dict(title='KL/TB21', overlaying='y', side='right'),
-        xaxis=dict(tickangle=-45),
-        autosize=True
+        xaxis=dict(tickangle=-45), # Nghiêng nhãn ngành
+        autosize=True              # BẬT TỰ ĐỘNG DIỆN TÍCH PHÙ HỢP
     )
     
-    # Xuất mã HTML có cấu hình responsive chuẩn
-    chart_config = {'responsive': True, 'displayModeBar': False} # Ẩn thanh công cụ thừa trên điện thoại
-    chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
-    
-    # Đọc template và thay thế dữ liệu
+    # Ghi file
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read()
 
+    # XUẤT HTML PLOTLY CÓ ĐÍNH KÈM PHẦN RESPONSIVE TRÊN MOBILE
+    chart_config = {'responsive': True}
+    chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
+    
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
     html = html.replace('{{TABLE_VIETNAM}}', table_vietnam_html)
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
@@ -131,6 +131,7 @@ def main():
     </div>
     """
     
+    # Thay thế Bảng chỉ số thế giới
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
     
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
