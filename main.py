@@ -109,22 +109,17 @@ def main():
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Thêm div cuộn ngang để ép hiện cột thứ 8)
+    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Đã bọc div cuộn độc lập bảo vệ cột 8)
     vietnam_block_html = f"""
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
-    <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+    <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 20px;">
         {table_vietnam_html}
     </div>
     """
-
     
-    # Thay thế dữ liệu khối Việt Nam
-    html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
-    html = html.replace('{{TABLE_VIETNAM}}', vietnam_block_html)
-    
-    # 4. Xử lý khối dữ liệu Quốc tế & Giá Vàng
+    # 4. Xử lý khối dữ liệu Quốc tế & Giá Vàng (Cấu trúc các khối div độc lập rõ ràng)
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
@@ -135,20 +130,22 @@ def main():
     
     <div class="market-section" style="margin-bottom: 30px;">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Thị trường Thế giới</h3>
-        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             {world_html}
         </div>
     </div>
 
     <div class="market-section">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Giá Vàng</h3>
-        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <div style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             {gold_html}
         </div>
     </div>
     """
     
-    # Thay thế khối Thế giới
+    # Thay thế dữ liệu vào template một lượt
+    html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
+    html = html.replace('{{TABLE_VIETNAM}}', vietnam_block_html)
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
     
     # 5. Ghi dữ liệu ra file thành phẩm index.html
