@@ -61,33 +61,25 @@
             .navbar-menu { gap: 15px; justify-content: center; }
             .navbar-item a { font-size: 13px; }
             
-            /* Giảm bớt padding của khung trắng để chừa không gian cho biểu đồ */
-            .market-update-box { padding: 10px; border-radius: 15px; }
+            /* Khung trắng tự động bao bọc, không khống chế chiều cao cứng nhắc */
+            .market-update-box { padding: 15px 10px; border-radius: 15px; height: auto; max-height: none; }
 
-            /* BẬT CHẾ ĐỘ SCALE NGUYÊN KHỐI CHO CÁC THÀNH PHẦN TỪ PYTHON CHÈN VÀO */
-            .market-update-box iframe,
-            .market-update-box div,
-            .market-update-box table,
-            .table-wrapper iframe,
-            .table-wrapper table {
-                width: 750px !important; /* Định nghĩa độ rộng chuẩn PC giả lập để Python không làm vỡ chữ */
-                max-width: none !important;
-                min-width: 0 !important;
-                transform: scale(0.48) !important; /* Thu nhỏ đều về ~48% để vừa khít màn hình điện thoại */
-                transform-origin: top left !important; /* Giữ điểm neo cố định ở góc trên bên trái */
-                display: block !important;
-            }
-
-            /* Tạo khoảng bù trừ chiều cao sau khi scale để không bị trống một khoảng trắng lớn phía dưới */
-            .market-update-box {
-                display: block;
-                height: auto;
-                max-height: 480px; /* Khống chế chiều cao hiển thị vừa vặn của khung trắng */
+            /* Bật tính năng cuộn ngang mượt mà cho bảng khi màn hình quá nhỏ */
+            .table-wrapper {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
             
-            /* Điều chỉnh riêng cho khu vực bảng thế giới nếu cần */
-            table { font-size: 12px !important; }
-            th, td { padding: 8px 4px !important; }
+            table { min-width: 500px; font-size: 13px !important; }
+            th, td { padding: 10px 5px !important; }
+
+            /* Reset lại biểu đồ Plotly tự co giãn theo chiều rộng màn hình điện thoại */
+            .market-update-box .js-plotly-plot,
+            .market-update-box .plotly {
+                width: 100% !important;
+                height: 400px !important;
+            }
         }
     </style>
 </head>
@@ -107,25 +99,27 @@
     <button class="sticky-contact-btn" id="openContactBtn">💬 Liên hệ tư vấn</button>
 
     <div class="main-wrapper">
-        <div class="container">
-            <h1>📈 Diễn Biến Thị Trường</h1>
-            <div class="market-update-box">
-                {{CHART_DIEN_BIEN}}
-            </div>
-
-            <h2 style="margin-top: 40px; color: #002060;">📈 Chỉ số Việt Nam</h2>
-            <div class="market-update-box">
-                <div class="table-wrapper">
-                    {{TABLE_VIETNAM}}
+            <div class="container">
+                <h1>📈 Diễn Biến Thị Trường</h1>
+                <div class="market-update-box">
+                    {{CHART_DIEN_BIEN}}
+                </div>
+    
+                <h2 style="margin-top: 40px; color: #002060;">📈 Chỉ số Việt Nam</h2>
+                <div class="market-update-box">
+                    <div class="table-wrapper">
+                        {{TABLE_VIETNAM}}
+                    </div>
+                </div>
+                
+                <h2 style="color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
+                <div class="market-update-box" id="world-table-container">
+                    <div class="table-wrapper">
+                        {{TABLE_WORLD}}
+                    </div>
                 </div>
             </div>
-            
-            <h2 style="color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
-            <div class="market-update-box" id="world-table-container">
-                {{TABLE_WORLD}}
-            </div>
         </div>
-    </div>
 
     <!-- Giữ nguyên cấu trúc Form & Modal của bạn -->
     <div class="modal-overlay" id="contactModal" style="display:none;">
