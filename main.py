@@ -127,7 +127,7 @@ def main():
             {world_html}
         </div>
     </div>
-    
+
     <!-- Tách biệt hoàn toàn khối Giá Vàng -->
     <div class="market-section">
         <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Giá Vàng</h3>
