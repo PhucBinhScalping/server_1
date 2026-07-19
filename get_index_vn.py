@@ -1,6 +1,5 @@
 import requests
 import pandas as pd
-from datetime import datetime
 
 def get_data_index():
     # 1. Lấy dữ liệu CafeF hiện tại
@@ -23,9 +22,9 @@ def get_data_index():
         df['volume'] = df['volume'].astype(str).str.replace(',', '', regex=False).astype(float).fillna(0)
         df['value'] = df['value'].astype(str).str.replace(',', '', regex=False).astype(float).fillna(0)
     except Exception as e:
-        return f"<p style='color:red;'>Lỗi lấy dữ liệu bảng giá: {e}</p>"
+        return f"Lỗi API hiện tại: {e}"
 
-    # 2. Lấy dữ liệu lịch sử phiên trước để so sánh thanh khoản
+    # 2. Lấy dữ liệu lịch sử phiên trước
     urls = {
         'VNINDEX': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HOSE&Symbol=VNINDEX&PageIndex=1&PageSize=20',
         'VN30': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HOSE&Symbol=VN30INDEX&PageIndex=1&PageSize=20',
@@ -50,30 +49,14 @@ def get_data_index():
         except:
             data_list.append({'name': name, 'volume_2': 1.0, 'value_2': 1.0})
 
-    # 3. Tính toán 8 cột dữ liệu đầy đủ
+    # 3. Tính toán dữ liệu thô (Bỏ qua định dạng % hay dấu phẩy phức tạp)
     result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
-    result_df['Thanh khoản %'] = (((result_df['volume'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1).fillna(0)
-    result_df['Thay đổi GT %'] = (((result_df['value'] - result_df['value_2']) / result_df['value_2']) * 100).round(1).fillna(0)
+    result_df['Thanhkhoan_pct'] = (((result_df['volume'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(2).fillna(0)
+    result_df['ThaydoiGT_pct'] = (((result_df['value'] - result_df['value_2']) / result_df['value_2']) * 100).round(2).fillna(0)
     
-    # Định dạng hiển thị số liệu đẹp mắt trước khi render
-    result_df['Chỉ số'] = result_df['name']
-    result_df['Điểm số'] = result_df['diem_so'].apply(lambda x: f"{x:,.2f}")
-    result_df['Thay đổi'] = result_df['change'].apply(lambda x: f"{x:,.2f}")
-    result_df['%'] = result_df['percent'].apply(lambda x: f"{x:.2%}")
-    result_df['KL Khớp'] = result_df['volume'].apply(lambda x: f"{x:,.0f}")
-    result_df['GT Khớp'] = result_df['value'].apply(lambda x: f"{x:,.0f}")
-    result_df['Thanh khoản %'] = result_df['Thanh khoản %'].apply(lambda x: f"{x}%")
-    result_df['Thay đổi GT %'] = result_df['Thay đổi GT %'].apply(lambda x: f"{x}%")
+    # Chỉ giữ lại đúng các trường thô để test
+    final_df = result_df[['name', 'diem_so', 'change', 'percent', 'volume', 'value', 'Thanhkhoan_pct', 'ThaydoiGT_pct']]
     
-    # Sắp xếp thứ tự các sàn đúng chuẩn
-    custom_order = ['VNINDEX', 'VN30', 'HNX', 'HNX30', 'UPCOM']
-    result_df['Chỉ số'] = pd.Categorical(result_df['Chỉ số'], categories=custom_order, ordered=True)
-    result_df = result_df.sort_values('Chỉ số')
-
-    # Trích xuất đúng 8 cột cần hiển thị
-    cols_to_show = ['Chỉ số', 'Điểm số', 'Thay đổi', '%', 'KL Khớp', 'GT Khớp', 'Thanh khoản %', 'Thay đổi GT %']
-    final_df = result_df[cols_to_show]
-    
-    # 4. Tự động sinh mã HTML từ DataFrame (Tuyệt đối không lệch cột)
-    html_output = final_df.to_html(index=False, border=0, classes='table_vn')
-    return html_output
+    # 4. Xuất bản dạng bảng chữ thô nguyên bản của hệ thống (Plain HTML Table)
+    # Không kèm style, không màu sắc, không bo góc.
+    return final_df.to_html(index=False)
