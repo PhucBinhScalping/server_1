@@ -85,9 +85,11 @@
                 table-layout: auto !important; /* Ép trình duyệt tự tính toán đều các cột */
                 font-size: 12px !important; 
             }
+
             th, td { 
-                padding: 8px 4px !important; 
-                white-space: nowrap !important; /* Ngăn chữ bị xuống dòng làm nát bảng */
+                display: table-cell !important; 
+                white-space: nowrap !important;
+                padding: 8px 6px !important;
             }
             /* THỦ THUẬT QUYẾT ĐỊNH: Ép toàn bộ các thẻ con nội bộ của Plotly/Ảnh phải nằm đúng trong tầm kiểm soát */
             .content-scroll-wrapper div, 
