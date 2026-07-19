@@ -48,9 +48,31 @@
         .navbar-item a:hover { color: #fff200; }
 
         /* --- TABLES & CHARTS ON PC --- */
-        table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 14px; }
-        th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eee; }
+        table { 
+            width: 100%; 
+            min-width: 750px; /* Tăng chiều rộng tối thiểu để chứa đủ cả 8 cột không bị co rúm chữ */
+            border-collapse: collapse; 
+            font-size: 14px; 
+            table-layout: auto;
+        }
+        th, td { 
+            padding: 12px 6px; /* Thu nhỏ khoảng cách padding một chút để bảng thanh thoát */
+            text-align: center; 
+            border-bottom: 1px solid #eee; 
+            white-space: nowrap; /* Giữ chữ số nằm trên 1 dòng đẹp đẽ */
+        }
         th { background-color: #f8f9fa; }
+        
+        /* Kích hoạt thanh cuộn mượt cho khu vực hiển thị bảng */
+        .market-update-box { 
+            background: #ffffff; 
+            padding: 25px; 
+            border-radius: 20px; 
+            margin-bottom: 30px; 
+            width: 100%; 
+            overflow-x: auto !important; /* Thay đổi từ hidden sang auto để kích hoạt thanh cuộn */
+            -webkit-overflow-scrolling: touch;
+        }
 
         /* --- UI ELEMENTS --- */
         .sticky-contact-btn { position: fixed; bottom: 30px; right: 30px; background-color: #002060; color: #ffffff; padding: 15px 25px; border-radius: 50px; cursor: pointer; z-index: 999; animation: pulse 2s infinite; font-weight: bold; }
