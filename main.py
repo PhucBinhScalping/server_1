@@ -43,8 +43,18 @@ def tinh_du_lieu_cp(symbol):
         return None
 
 def main():
-    # 1. Gọi module Việt Nam từ file get_index_vn.py (Đã tách riêng bảo trì)
+    # 1. Gọi và KIỂM TRA dữ liệu nhận từ file get_index_vn.py
+    print("\n=== [LOG] TIẾN HÀNH GỌI HÀM GET_DATA_INDEX() ===")
     table_vietnam_html = get_data_index() 
+    
+    print("=== [LOG] KẾT QUẢ TRẢ VỀ TỪ FILE GET_INDEX_VN.PY ===")
+    if table_vietnam_html:
+        print(f"Độ dài chuỗi HTML: {len(table_vietnam_html)} ký tự.")
+        print("Đoạn code HTML nhận được (1000 ký tự đầu):")
+        print(table_vietnam_html[:1000])
+    else:
+        print("CẢNH BÁO: Hàm get_data_index() trả về giá trị RỖNG (None hoặc Empty String)!")
+    print("==================================================\n")
         
     df_config = pd.read_excel(FILE_DANH_SACH)
     df_config['Ngành Cấp 2'] = df_config['Ngành Cấp 2'].astype(str).str.strip().str.upper()
@@ -97,7 +107,7 @@ def main():
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    # 2. Tạo khối HTML Việt Nam (Rút gọn sạch sẽ, khớp theo template bảo vệ thanh cuộn)
+    # 2. Khối HTML Việt Nam (Ăn theo cấu trúc class của template)
     vietnam_block_html = f"""
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 5px; font-style: italic;">
         Cập nhật: {time_str}
@@ -128,7 +138,6 @@ def main():
     </div>
     """
     
-    # Thay thế dữ liệu vào Template mẫu
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
     html = html.replace('{{TABLE_VIETNAM}}', vietnam_block_html)
     html = html.replace('{{TABLE_WORLD}}', market_tables_content)
