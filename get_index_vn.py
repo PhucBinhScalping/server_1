@@ -1,5 +1,7 @@
 import requests
 import pandas as pd
+from datetime import datetime
+import pytz
 
 def get_data_index():
     try:
@@ -46,13 +48,10 @@ def get_data_index():
         for name, url in urls.items():
             try:
                 r = requests.get(url, timeout=5).json()
-                # Truy cập chính xác vào mảng dữ liệu lịch sử 'Data' phía trong
                 history_list = r.get('Data', {}).get('Data', [])
                 
                 if len(history_list) > 1:
-                    # history_list[0] là hôm nay/phiên mới nhất, history_list[1] là phiên trước đó
                     prev_day = history_list[1]
-                    
                     vol_raw = str(prev_day.get('KhoiLuongKhopLenh', '1')).replace(',', '')
                     val_raw = str(prev_day.get('GiaTriKhopLenh', '1')).replace(',', '')
                     
@@ -69,7 +68,6 @@ def get_data_index():
         # 4. Merge và Tính toán
         result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
         result_df['Thanh khoản %'] = (((result_df['KL Khớp'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1)
-        # Sửa lại đồng bộ tên cột tính toán ở đây thành 'Thay đổi GT %'
         result_df['Thay đổi GT %'] = (((result_df['GT Khớp'] - result_df['value_2']) / result_df['value_2']) * 100).round(1)
         
         # 5. Định dạng lại bảng
@@ -77,22 +75,45 @@ def get_data_index():
         result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
         final_df = result_df.sort_values('name').set_index('name')
         
-        # 6. Tạo bảng HTML (Thêm thuộc tính tự động co giãn cột và responsive)
-        html = '<div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">'
-        html += '<table class="world-index-table" border="0" style="width:100%; border-collapse:collapse; text-align:center; table-layout: auto;">'
-        html += '<thead><tr><th>Chỉ số</th><th>Điểm số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp</th><th>Thanh khoản %</th><th>Thay đổi GT %</th></tr></thead><tbody>'
+        # 6. Lấy thời gian cập nhật hiện tại theo múi giờ VN
+        vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
+        time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
+
+        # 7. Tạo bảng HTML (Ép kiểu inline style để đè đứt CSS cũ của file template)
+        html = f"""
+        <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
+            Cập nhật: {time_str}
+        </div>
+        <div style="width:100%; overflow-x:auto !important; -webkit-overflow-scrolling:touch;">
+            <table class="world-index-table" border="0" style="width:100% !important; min-width:780px !important; border-collapse:collapse; text-align:center; table-layout:auto !important;">
+                <thead>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 12px 6px; white-space: nowrap;">Chỉ số</th>
+                        <th style="padding: 12px 6px; white-space: nowrap;">Điểm số</th>
+                        <th style="padding: 12px 6px; white-space: nowrap;">Thay đổi</th>
+                        <th style="padding: 12px 6px; white-space: nowrap;">%</th>
+                        <th style="padding: 12px 6px; white-space: nowrap;">KL Khớp</th>
+                        <th style="padding: 12px 6px; white-space: nowrap;">GT Khớp</th>
+                        <th style="padding: 12px 6px; white-space: nowrap;">Thanh khoản %</th>
+                        <th style="padding: 12px 6px; white-space: nowrap;">Thay đổi GT %</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
         
         for name, row in final_df.iterrows():
             def get_color(v): return '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
             
-            html += f"<tr><td style='font-weight:bold;'>{name}</td>"
-            html += f"<td style='font-weight:bold;'>{row['Chỉ số']:,.2f}</td>" 
-            html += f"<td style='color:{get_color(row['Thay đổi'])}; font-weight:bold;'>{row['Thay đổi']:,.2f}</td>"
-            html += f"<td style='color:{get_color(row['%'])}; font-weight:bold;'>{row['%']:.2%}</td>"
-            html += f"<td>{row['KL Khớp']:,.0f}</td>"
-            html += f"<td>{row['GT Khớp']:,.0f}</td>"
-            html += f"<td style='color:{get_color(row['Thanh khoản %'])}; font-weight:bold;'>{row['Thanh khoản %']:.1f}%</td>"
-            html += f"<td style='color:{get_color(row['Thay đổi GT %'])}; font-weight:bold;'>{row['Thay đổi GT %']:.1f}%</td></tr>"
+            html += f"<tr style='border-bottom: 1px solid #eee;'>"
+            html += f"<td style='padding: 12px 6px; white-space: nowrap; font-weight:bold;'>{name}</td>"
+            html += f"<td style='padding: 12px 6px; white-space: nowrap; font-weight:bold;'>{row['Chỉ số']:,.2f}</td>" 
+            html += f"<td style='padding: 12px 6px; white-space: nowrap; color:{get_color(row['Thay đổi'])}; font-weight:bold;'>{row['Thay đổi']:,.2f}</td>"
+            html += f"<td style='padding: 12px 6px; white-space: nowrap; color:{get_color(row['%'])}; font-weight:bold;'>{row['%']:.2%}</td>"
+            html += f"<td style='padding: 12px 6px; white-space: nowrap;'>{row['KL Khớp']:,.0f}</td>"
+            html += f"<td style='padding: 12px 6px; white-space: nowrap;'>{row['GT Khớp']:,.0f}</td>"
+            html += f"<td style='padding: 12px 6px; white-space: nowrap; color:{get_color(row['Thanh khoản %'])}; font-weight:bold;'>{row['Thanh khoản %']:.1f}%</td>"
+            html += f"<td style='padding: 12px 6px; white-space: nowrap; color:{get_color(row['Thay đổi GT %'])}; font-weight:bold;'>{row['Thay đổi GT %']:.1f}%</td>"
+            html += "</tr>"
             
         html += '</tbody></table></div>'
         return html
