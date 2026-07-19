@@ -7,8 +7,6 @@ from datetime import datetime, timedelta
 import pytz
 from concurrent.futures import ThreadPoolExecutor
 
-
-
 # Cấu hình
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 TEMPLATE_FILE = "template.html"
@@ -82,6 +80,7 @@ def main():
 
     df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
     vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
+    
     # Vẽ biểu đồ
     colors = ['#198754' if x > 0 else '#dc3545' for x in df_final['percent_change']]
     
@@ -95,14 +94,19 @@ def main():
         height=500, margin=dict(l=20, r=20, t=50, b=120),
         yaxis=dict(title='BĐ giá (%)'),
         yaxis2=dict(title='KL/TB21', overlaying='y', side='right'),
-        xaxis=dict(tickangle=-45) # Nghiêng nhãn ngành
+        xaxis=dict(tickangle=-45), # Nghiêng nhãn ngành
+        autosize=True              # BẬT TỰ ĐỘNG DIỆN TÍCH PHÙ HỢP
     )
     
     # Ghi file
     with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
         html = f.read()
 
-    html = html.replace('{{CHART_DIEN_BIEN}}', fig.to_html(full_html=False, include_plotlyjs='cdn'))
+    # XUẤT HTML PLOTLY CÓ ĐÍNH KÈM PHẦN RESPONSIVE TRÊN MOBILE
+    chart_config = {'responsive': True}
+    chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
+    
+    html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
     html = html.replace('{{TABLE_VIETNAM}}', table_vietnam_html)
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
     
