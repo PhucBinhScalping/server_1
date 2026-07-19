@@ -102,13 +102,16 @@ def main():
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    # 3. Tạo khối HTML Việt Nam hoàn chỉnh bọc div cuộn chống tràn di động
+    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Định nghĩa đồng bộ class css như bảng Thế giới)
     vietnam_block_html = f"""
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
-    <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-        {table_vietnam_html}
+    
+    <div class="market-section" style="margin-bottom: 30px;">
+        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            {table_vietnam_html}
+        </div>
     </div>
     """
     
