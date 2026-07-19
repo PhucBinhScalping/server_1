@@ -77,14 +77,15 @@ def get_data_index():
         result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
         final_df = result_df.sort_values('name').set_index('name')
         
-        # 6. Tạo bảng HTML
-        html = '<table class="world-index-table" border="0" style="width:100%; border-collapse:collapse; text-align:center;">'
+        # 6. Tạo bảng HTML (Thêm thuộc tính tự động co giãn cột và responsive)
+        html = '<div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;">'
+        html += '<table class="world-index-table" border="0" style="width:100%; border-collapse:collapse; text-align:center; table-layout: auto;">'
         html += '<thead><tr><th>Chỉ số</th><th>Điểm số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp</th><th>Thanh khoản %</th><th>Thay đổi GT %</th></tr></thead><tbody>'
         
         for name, row in final_df.iterrows():
             def get_color(v): return '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
             
-            html += f"<tr><td>{name}</td>"
+            html += f"<tr><td style='font-weight:bold;'>{name}</td>"
             html += f"<td style='font-weight:bold;'>{row['Chỉ số']:,.2f}</td>" 
             html += f"<td style='color:{get_color(row['Thay đổi'])}; font-weight:bold;'>{row['Thay đổi']:,.2f}</td>"
             html += f"<td style='color:{get_color(row['%'])}; font-weight:bold;'>{row['%']:.2%}</td>"
@@ -93,7 +94,7 @@ def get_data_index():
             html += f"<td style='color:{get_color(row['Thanh khoản %'])}; font-weight:bold;'>{row['Thanh khoản %']:.1f}%</td>"
             html += f"<td style='color:{get_color(row['Thay đổi GT %'])}; font-weight:bold;'>{row['Thay đổi GT %']:.1f}%</td></tr>"
             
-        html += '</tbody></table>'
+        html += '</tbody></table></div>'
         return html
 
     except Exception as e:
