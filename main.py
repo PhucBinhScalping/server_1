@@ -8,6 +8,7 @@ import pytz
 from concurrent.futures import ThreadPoolExecutor
 
 
+
 # Cấu hình
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 TEMPLATE_FILE = "template.html"
