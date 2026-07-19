@@ -21,6 +21,7 @@
         .main-wrapper { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; width: 100%; }
         .container { max-width: 1200px; width: 100%; background: rgba(255, 255, 255, 0.2); padding: 40px; border-radius: 25px; backdrop-filter: blur(15px); text-align: center; }
         h1 { color: #002060; margin-bottom: 30px; font-size: 2.5em; text-transform: uppercase; }
+        h2 { font-size: 1.8em; margin-bottom: 15px; }
         
         /* Khung trắng chứa dữ liệu */
         .market-update-box { 
@@ -32,6 +33,13 @@
             overflow: hidden; 
         }
 
+        /* Khung bọc chống tràn đa năng (Dùng cho cả Biểu đồ và Bảng) */
+        .content-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* Giúp vuốt mượt trên iPhone */
+        }
+
         /* --- NAVBAR --- */
         .navbar { position: sticky; top: 0; width: 100%; background: #002060; z-index: 1000; padding: 15px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .navbar-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: flex-start; }
@@ -40,7 +48,6 @@
         .navbar-item a:hover { color: #fff200; }
 
         /* --- TABLES & CHARTS ON PC --- */
-        .table-wrapper { width: 100%; overflow: hidden; }
         table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 14px; }
         th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eee; }
         th { background-color: #f8f9fa; }
@@ -53,32 +60,35 @@
             100% { box-shadow: 0 0 0 0 rgba(0, 32, 96, 0); }
         }
 
-        /* --- MOBILE RESPONSIVE (XỬ LÝ CO CỤM NGUYÊN KHỐI) --- */
+        /* Cấu hình các Form / Modal của bạn */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 20px; }
+        .modal-box { background: white; padding: 30px; border-radius: 20px; max-width: 500px; width: 100%; text-align: left; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #002060; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; }
+        .btn-submit { width: 100%; padding: 12px; background: #002060; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-close { width: 100%; padding: 10px; background: #eee; color: #333; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+
+        /* --- MOBILE RESPONSIVE (SỬA ĐỔI TRIỆT ĐỂ) --- */
         @media (max-width: 768px) {
             .main-wrapper { padding: 15px 10px; }
-            .container { padding: 15px; border-radius: 15px; }
-            h1 { font-size: 1.6em; }
+            .container { padding: 15px 10px; border-radius: 15px; }
+            h1 { font-size: 1.5em; }
+            h2 { font-size: 1.3em; }
             .navbar-menu { gap: 15px; justify-content: center; }
             .navbar-item a { font-size: 13px; }
             
-            /* Khung trắng tự động bao bọc, không khống chế chiều cao cứng nhắc */
-            .market-update-box { padding: 15px 10px; border-radius: 15px; height: auto; max-height: none; }
-
-            /* Bật tính năng cuộn ngang mượt mà cho bảng khi màn hình quá nhỏ */
-            .table-wrapper {
-                width: 100%;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
+            .market-update-box { padding: 12px; border-radius: 15px; height: auto; max-height: none; }
             
-            table { min-width: 500px; font-size: 13px !important; }
-            th, td { padding: 10px 5px !important; }
+            /* Ép các cấu trúc bảng thu nhỏ chữ một chút trên mobile */
+            table { min-width: 550px; font-size: 13px !important; }
+            th, td { padding: 10px 4px !important; }
 
-            /* Reset lại biểu đồ Plotly tự co giãn theo chiều rộng màn hình điện thoại */
-            .market-update-box .js-plotly-plot,
-            .market-update-box .plotly {
-                width: 100% !important;
-                height: 400px !important;
+            /* Can thiệp sâu vào các class nội bộ do thư viện Plotly tự sinh ra */
+            .market-update-box div, 
+            .market-update-box .plotly, 
+            .market-update-box .js-plotly-plot {
+                max-width: 100% !important;
             }
         }
     </style>
@@ -99,27 +109,32 @@
     <button class="sticky-contact-btn" id="openContactBtn">💬 Liên hệ tư vấn</button>
 
     <div class="main-wrapper">
-            <div class="container">
-                <h1>📈 Diễn Biến Thị Trường</h1>
-                <div class="market-update-box">
+        <div class="container">
+            <h1>📈 Diễn Biến Thị Trường</h1>
+            <div class="market-update-box">
+                <!-- Bọc biểu đồ vào khung cuộn chống tràn -->
+                <div class="content-scroll-wrapper">
                     {{CHART_DIEN_BIEN}}
                 </div>
+            </div>
     
-                <h2 style="margin-top: 40px; color: #002060;">📈 Chỉ số Việt Nam</h2>
-                <div class="market-update-box">
-                    <div class="table-wrapper">
-                        {{TABLE_VIETNAM}}
-                    </div>
+            <h2 style="margin-top: 40px; color: #002060;">📈 Chỉ số Việt Nam</h2>
+            <div class="market-update-box">
+                <!-- Bọc bảng Việt Nam -->
+                <div class="content-scroll-wrapper">
+                    {{TABLE_VIETNAM}}
                 </div>
-                
-                <h2 style="color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
-                <div class="market-update-box" id="world-table-container">
-                    <div class="table-wrapper">
-                        {{TABLE_WORLD}}
-                    </div>
+            </div>
+            
+            <h2 style="color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
+            <div class="market-update-box" id="world-table-container">
+                <!-- Bọc bảng Thế Giới -->
+                <div class="content-scroll-wrapper">
+                    {{TABLE_WORLD}}
                 </div>
             </div>
         </div>
+    </div>
 
     <!-- Giữ nguyên cấu trúc Form & Modal của bạn -->
     <div class="modal-overlay" id="contactModal" style="display:none;">
