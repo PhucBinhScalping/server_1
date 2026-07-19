@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 
 OUTPUT_FILE = "index.html"
@@ -15,9 +15,10 @@ def get_world_index_html():
         df = pd.DataFrame(data)[['name', 'last_price', 'change_price', 'change_percent']]
         df = df[~df['name'].str.contains('Futures', case=False, na=False)]
         remove_list = ['Space Exploration Technologies Corp', 'VinFast Auto Ltd. Ordinary Shares (VFS)']
-        df = df[~df['name'].isin(remove_list)] # Sửa dòng này
+        df = df[~df['name'].isin(remove_list)]
         
-        html = '<table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
+        # Thêm div bọc ngoài để hỗ trợ cuộn trên điện thoại
+        html = '<div class="table-wrapper"><table class="world-index-table"><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
         for _, row in df.iterrows():
             try:
                 change_pct = float(str(row['change_percent']).replace(',', ''))
@@ -30,7 +31,7 @@ def get_world_index_html():
                 <td style='color:{color}'>{row['change_price']}</td>
                 <td style='color:{color}'>{row['change_percent']}%</td>
             </tr>"""
-        html += '</table>'
+        html += '</table></div>'
         return html
     except:
         return "Lỗi tải dữ liệu"
@@ -43,18 +44,14 @@ def get_gold_index_html():
         r = requests.get(url, headers=head, timeout=10)
         data = r.json()['data']['gold_price']
         
-        # Tạo DataFrame và xử lý trực tiếp
         df = pd.DataFrame(data)
-        
-        # Xử lý các cột cần thiết
-        # Lưu ý: Không chia 100 nếu dữ liệu API đã ở dạng số phần trăm mong muốn
         df['Percent_val'] = pd.to_numeric(df['Percent'].str.replace('%', '').str.replace(',', ''), errors='coerce')
         df['Last_clean'] = df['Last'].str.replace('N', '').str.strip()
         
-        html = '<table class="gold-table"><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
+        # Thêm div bọc ngoài tương tự để hỗ trợ responsive
+        html = '<div class="table-wrapper"><table class="gold-table"><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr>'
         
         for _, row in df.iterrows():
-            # Xác định màu dựa trên Percent_val
             try:
                 pct = float(row['Percent_val'])
                 color = 'green' if pct >= 0 else 'red'
@@ -68,11 +65,10 @@ def get_gold_index_html():
                 <td style='color:{color}'>{row['Percent']}</td>
             </tr>"""
         
-        html += '</table>'
+        html += '</table></div>'
         return html
     except Exception as e:
         return f"<p>Lỗi tải vàng: {e}</p>"
-        
 
 def update_world_table():
     world_html = get_world_index_html()
@@ -87,22 +83,21 @@ def update_world_table():
     if target_div:
         target_div.clear()
         market_tables_content = f"""
-        <!-- Dòng thời gian cập nhật chung cho cả 2 bảng -->
         <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
             Cập nhật: {vn_time}
         </div>
         
         <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
-                <h3 style="text-align:center;">Thị trường Thế giới</h3>
+            <div style="flex: 1; min-width: 280px; padding-bottom: 20px;">
+                <h3 style="text-align:center; margin-bottom: 10px;">Thị trường Thế giới</h3>
                 {world_html}
             </div>
-            <div style="flex: 1; min-width: 300px;">
-                <h3 style="text-align:center;">Giá Vàng</h3>
+            <div style="flex: 1; min-width: 280px;">
+                <h3 style="text-align:center; margin-bottom: 10px;">Giá Vàng</h3>
                 {gold_html}
             </div>
         </div>
-    """
+        """
         flex_div = BeautifulSoup(market_tables_content, 'html.parser')
         target_div.append(flex_div)
         
