@@ -113,19 +113,25 @@ def main():
     world_html = get_world_index_html()
     gold_html = get_gold_index_html()
     
+    # === THAY THẾ TOÀN BỘ ĐOẠN MARKET_TABLES_CONTENT CŨ THÀNH ĐOẠN NÀY ===
     market_tables_content = f"""
     <!-- Dòng thời gian cập nhật chung cho cả 2 bảng -->
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
     
-    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 280px; padding-bottom: 20px;">
-            <h3 style="text-align:center; margin-bottom: 10px;">Thị trường Thế giới</h3>
+    <!-- Tách biệt hoàn toàn khối Thế giới -->
+    <div class="market-section" style="margin-bottom: 30px;">
+        <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Thị trường Thế giới</h3>
+        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             {world_html}
         </div>
-        <div style="flex: 1; min-width: 280px;">
-            <h3 style="text-align:center; margin-bottom: 10px;">Giá Vàng</h3>
+    </div>
+    
+    <!-- Tách biệt hoàn toàn khối Giá Vàng -->
+    <div class="market-section">
+        <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Giá Vàng</h3>
+        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
             {gold_html}
         </div>
     </div>
