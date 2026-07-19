@@ -40,35 +40,41 @@ def get_data_index():
     for name, url in urls.items():
         try:
             r = requests.get(url, timeout=5).json()
-            # Lấy trực tiếp từ key 'Data' cấp 1 theo đúng cấu trúc thực tế
             history_list = r.get('Data', [])
             
+            # An toàn dữ liệu: Nếu mảng lịch sử có từ 2 phần tử trở lên mới lấy phần tử thứ 2, ngược lại lấy phần tử thứ 1
             if len(history_list) > 1:
-                prev_day = history_list[1]  
-                vol_raw = str(prev_day.get('KhoiLuongKhopLenh', '1')).replace(',', '')
-                val_raw = str(prev_day.get('GiaTriKhopLenh', '1')).replace(',', '')
-                
-                data_list.append({
-                    'name': name, 
-                    'volume_2': float(vol_raw) if vol_raw else 1.0, 
-                    'value_2': float(val_raw) if val_raw else 1.0
-                })
+                prev_day = history_list[1]
+            elif len(history_list) == 1:
+                prev_day = history_list[0]
             else:
-                data_list.append({'name': name, 'volume_2': 1.0, 'value_2': 1.0})
+                prev_day = {}
+                
+            vol_raw = str(prev_day.get('KhoiLuongKhopLenh', '0')).replace(',', '')
+            val_raw = str(prev_day.get('GiaTriKhopLenh', '0')).replace(',', '')
+            
+            v_2 = float(vol_raw) if vol_raw and float(vol_raw) > 0 else 1.0
+            val_2 = float(val_raw) if val_raw and float(val_raw) > 0 else 1.0
+            
+            data_list.append({'name': name, 'volume_2': v_2, 'value_2': val_2})
         except Exception:
             data_list.append({'name': name, 'volume_2': 1.0, 'value_2': 1.0})
 
-    # 3. Merge và Tính toán phần trăm (Dùng chính xác tên cột volume/value gốc)
+    # 3. Merge và Tính toán phần trăm biến động
     result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
     result_df['Thanh khoản %'] = (((result_df['volume'] - result_df['volume_2']) / result_df['volume_2']) * 100).round(1)
     result_df['Thay đổi GT %'] = (((result_df['value'] - result_df['value_2']) / result_df['value_2']) * 100).round(1)
+    
+    # Fill NaN nếu có lỗi phát sinh toán học để bảng không bị lỗi cấu trúc dữ liệu chuỗi f-string
+    result_df['Thanh khoản %'] = result_df['Thanh khoản %'].fillna(0)
+    result_df['Thay đổi GT %'] = result_df['Thay đổi GT %'].fillna(0)
     
     # 4. Định dạng thứ tự bảng
     custom_order = ['VNINDEX', 'VN30', 'HNX', 'HNX30', 'UPCOM']
     result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
     final_df = result_df.sort_values('name')
         
-    # 5. Sinh bảng HTML với CSS inline cưỡng ép kích thước
+    # 5. Sinh bảng HTML với biến độc lập tránh lỗi xung đột dấu nháy chuỗi f-string
     html = """
     <table border="0">
         <thead>
@@ -89,7 +95,6 @@ def get_data_index():
     for _, row in final_df.iterrows():
         def get_color(v): return '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
         
-        # Gán ra các biến độc lập để tránh xung đột dấu nháy và ký tự % trong f-string
         val_tk = row['Thanh khoản %']
         val_gt = row['Thay đổi GT %']
         
@@ -106,4 +111,3 @@ def get_data_index():
         
     html += '</tbody></table>'
     return html
-
