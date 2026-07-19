@@ -109,13 +109,16 @@ def main():
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Đúng thứ tự khai báo biến)
+    # 3. Tạo khối HTML Việt Nam hoàn chỉnh (Thêm div cuộn ngang để ép hiện cột thứ 8)
     vietnam_block_html = f"""
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
         Cập nhật: {time_str}
     </div>
-    {table_vietnam_html}
+    <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        {table_vietnam_html}
+    </div>
     """
+
     
     # Thay thế dữ liệu khối Việt Nam
     html = html.replace('{{CHART_DIEN_BIEN}}', chart_render)
