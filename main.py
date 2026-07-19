@@ -115,12 +115,12 @@ def main():
     </div>
     
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 300px; border-right: 2px dashed #808080; padding-right: 20px;">
-            <h3 style="text-align:center;">Thị trường Thế giới</h3>
+        <div style="flex: 1; min-width: 280px; padding-bottom: 20px;">
+            <h3 style="text-align:center; margin-bottom: 10px;">Thị trường Thế giới</h3>
             {world_html}
         </div>
-        <div style="flex: 1; min-width: 300px;">
-            <h3 style="text-align:center;">Giá Vàng</h3>
+        <div style="flex: 1; min-width: 280px;">
+            <h3 style="text-align:center; margin-bottom: 10px;">Giá Vàng</h3>
             {gold_html}
         </div>
     </div>
