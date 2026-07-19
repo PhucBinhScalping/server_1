@@ -89,6 +89,10 @@ def get_data_index():
     for _, row in final_df.iterrows():
         def get_color(v): return '#dc3545' if v < 0 else '#198754' if v > 0 else 'black'
         
+        # Gán ra các biến độc lập để tránh xung đột dấu nháy và ký tự % trong f-string
+        val_tk = row['Thanh khoản %']
+        val_gt = row['Thay đổi GT %']
+        
         html += "<tr>"
         html += f"<td style='font-weight:bold;'>{row['name']}</td>"
         html += f"<td style='font-weight:bold;'>{row['diem_so']:,.2f}</td>" 
@@ -96,9 +100,10 @@ def get_data_index():
         html += f"<td style='color:{get_color(row['percent'])}; font-weight:bold;'>{row['percent']:.2%}</td>"
         html += f"<td>{row['volume']:,.0f}</td>"
         html += f"<td>{row['value']:,.0f}</td>"
-        html += f"<td style='color:{get_color(row['Thanh khoản %'])}; font-weight:bold;'>{row['Thanh khoản %']:.1f}%</td>"
-        html += f"<td style='color:{get_color(row['Thay đổi GT %'])}; font-weight:bold;'>{row['Thay đổi GT %']:.1f}%</td>"
+        html += f"<td style='color:{get_color(val_tk)}; font-weight:bold;'>{val_tk:.1f}%</td>"
+        html += f"<td style='color:{get_color(val_gt)}; font-weight:bold;'>{val_gt:.1f}%</td>"
         html += "</tr>"
         
     html += '</tbody></table>'
     return html
+
