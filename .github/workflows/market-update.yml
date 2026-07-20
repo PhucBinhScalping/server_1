@@ -2,8 +2,9 @@ name: Market Update (Vietnam Time)
 on:
   workflow_dispatch:
   schedule:
-    # Chạy mỗi 15 phút, liên tục các ngày T2-T6
-    - cron: '0,15,30,45 * * * 1-5'
+    # Giờ VN: 09:00, 09:15, 09:30, 09:45 đến hết 15:45 (Thứ 2 đến Thứ 6)
+    # Quy đổi sang giờ UTC (Trừ đi 7 tiếng): Từ 02:00 sáng đến 08:45 sáng UTC
+    - cron: '0,15,30,45 2-8 * * 1-5'
 
 permissions:
   contents: write
@@ -22,16 +23,15 @@ jobs:
 
       - name: Run Scripts (Check Vietnam Time)
         run: |
-          # Lấy giờ hiện tại theo UTC, cộng thêm 7 tiếng để ra giờ Việt Nam
-          # Chỉ chạy script nếu giờ Việt Nam nằm trong khoảng 09:00 - 15:15
           CURRENT_HOUR_VN=$(TZ="Asia/Ho_Chi_Minh" date +%H)
           
+          # Bảo vệ 2 lớp: Chỉ chạy trong khung giờ từ 9h sáng đến trước 16h chiều VN
           if [ "$CURRENT_HOUR_VN" -ge 9 ] && [ "$CURRENT_HOUR_VN" -lt 16 ]; then
-            echo "Trong giờ giao dịch, thực hiện cập nhật..."
-            python get_index_vn.py
+            echo "Đang trong giờ giao dịch Việt Nam ($CURRENT_HOUR_VN:00). Tiến hành cập nhật..."
+            # Chỉ cần chạy duy nhất file main.py (vì bên trong nó đã tự gọi file get_index_vn.py rồi)
             python main.py
           else
-            echo "Ngoài giờ giao dịch ($CURRENT_HOUR_VN:00), bỏ qua cập nhật."
+            echo "Ngoài giờ giao dịch ($CURRENT_HOUR_VN:00), hệ thống bỏ qua."
           fi
 
       - name: Commit and Push
