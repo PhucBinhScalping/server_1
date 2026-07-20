@@ -21,13 +21,10 @@ jobs:
           python-version: '3.10'
           
       - name: Install dependencies
-        run: pip install requests pandas beautifulsoup4 datetime pytz plotly user_agent openpyxl kaleido
+        run: pip install requests pandas beautifulsoup4 datetime pytz
           
       - name: Run Index Update
         run: python update_index_only.py
-
-      - name: Run Scripts
-        run: python main.py
 
       - name: Commit and Push
         run: |
