@@ -33,13 +33,15 @@ def get_data_index():
             'HNX30': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HNX&Symbol=HNX30-INDEX&PageIndex=1&PageSize=20'
         }
 
-        # Lấy ngày hiện tại theo định dạng DD/MM/YYYY (khớp với trường 'Ngay' trong JSON của CafeF)
+        # Lấy ngày hiện tại theo định dạng DD/MM/YYYY
         today_str = datetime.now().strftime('%d/%m/%Y')
         data_list = []
         
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        
         for name, url in urls.items():
             try:
-                r = requests.get(url, timeout=5).json()
+                r = requests.get(url, headers=headers, timeout=5).json()
                 history_list = r.get('Data', [])
                 
                 prev_day = {}
@@ -48,17 +50,23 @@ def get_data_index():
                     first_item_date = history_list[0].get('Ngay', '')
                     
                     if first_item_date == today_str:
-                        # Nếu trùng ngày hiện tại, lùi xuống 1 dòng (lấy phiên trước đó)
+                        # Nếu trùng ngày hiện tại, lùi xuống phiên trước đó (dòng thứ 2)
                         prev_day = history_list[1] if len(history_list) > 1 else history_list[0]
                     else:
-                        # Nếu không trùng (ví dụ chạy ngoài giờ hoặc sáng sớm chưa cập nhật), lấy luôn dòng đầu tiên
+                        # Nếu chưa cập nhật ngày mới, lấy dòng đầu tiên
                         prev_day = history_list[0]
                 
-                vol_raw = str(prev_day.get('KhoiLuongKhopLenh', '0')).replace(',', '')
-                val_raw = str(prev_day.get('GiaTriKhopLenh', '0')).replace(',', '')
+                # SỬA TẠI ĐÂY: Chuyển chữ cái đầu sang viết thường chuẩn theo API CafeF
+                vol_raw = str(prev_day.get('khoiLuongKhopLenh', '0')).replace(',', '')
+                val_raw = str(prev_day.get('giaTriKhopLenh', '0')).replace(',', '')
                 
                 v_2 = float(vol_raw) if vol_raw and float(vol_raw) > 0 else 1.0
                 val_2 = float(val_raw) if val_raw and float(val_raw) > 0 else 1.0
+                
+                # Chuẩn hóa đơn vị Giá trị khớp lệnh nếu API trả về dạng tỉ đồng
+                if val_2 < 100000:  
+                    val_2 = val_2 * 1000000000
+                
                 data_list.append({'name': name, 'volume_2': v_2, 'value_2': val_2})
             except:
                 data_list.append({'name': name, 'volume_2': 1.0, 'value_2': 1.0})
@@ -66,6 +74,12 @@ def get_data_index():
         # 3. Tính toán 8 cột dữ liệu đầy đủ
         result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
         
+        # Đồng bộ hóa đơn vị Giá trị từ bảng giá (Nếu bảng giá trả về đơn vị Tỷ hoặc Triệu)
+        # Thông thường banggia.cafef.vn cột 'value' đã tính theo đơn vị gốc hoặc đồng bộ, ta chuẩn hóa:
+        for idx, row in result_df.iterrows():
+            if row['value'] < 100000:
+                result_df.at[idx, 'value'] = row['value'] * 1000000000
+
         def calc_pct(row, col_now, col_prev):
             now = row[col_now]
             prev = row[col_prev]
@@ -92,13 +106,18 @@ def get_data_index():
             color_tk = get_color(row['Thanh khoản %'])
             color_gt = get_color(row['Thay đổi GT %'])
             
+            # Hiển thị Giá trị Khớp lệnh thân thiện (Chia lại cho 1 tỷ để gọn bảng nếu số quá lớn)
+            display_value = row["value"]
+            if display_value > 1000000:
+                display_value = display_value / 1000000000
+            
             html += '<tr>'
             html += f'<td style="font-weight:bold;">{row["name"]}</td>'
             html += f'<td style="font-weight:bold;">{row["diem_so"]:,.2f}</td>'
             html += f'<td style="color:{color_chg}; font-weight:bold;">{row["change"]:,.2f}</td>'
             html += f'<td style="color:{color_per}; font-weight:bold;">{row["percent"]:.2%}</td>'
             html += f'<td>{row["volume"]:,.0f}</td>'
-            html += f'<td>{row["value"]:,.0f}</td>'
+            html += f'<td>{display_value:,.0f}</td>'
             html += f'<td style="color:{color_tk}; font-weight:bold;">{row["Thanh khoản %"]}%</td>'
             html += f'<td style="color:{color_gt}; font-weight:bold;">{row["Thay đổi GT %"]}%</td>'
             html += '</tr>'
