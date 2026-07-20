@@ -13,26 +13,21 @@ jobs:
   update-all:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      
-      - uses: actions/setup-python@v6
-        with: {python-version: '3.10'}
+      - name: Checkout source code
+        uses: actions/checkout@v5
         
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with: 
+          python-version: '3.10'
+          
       - name: Install dependencies
         run: pip install requests pandas beautifulsoup4 plotly user_agent openpyxl kaleido
 
-      - name: Run Scripts (Check Vietnam Time)
+      - name: Run Scripts
         run: |
-          CURRENT_HOUR_VN=$(TZ="Asia/Ho_Chi_Minh" date +%H)
-          
-          # Bảo vệ 2 lớp: Chỉ chạy trong khung giờ từ 9h sáng đến trước 16h chiều VN
-          if [ "$CURRENT_HOUR_VN" -ge 9 ] && [ "$CURRENT_HOUR_VN" -lt 16 ]; then
-            echo "Đang trong giờ giao dịch Việt Nam ($CURRENT_HOUR_VN:00). Tiến hành cập nhật..."
-            # Chỉ cần chạy duy nhất file main.py (vì bên trong nó đã tự gọi file get_index_vn.py rồi)
-            python main.py
-          else
-            echo "Ngoài giờ giao dịch ($CURRENT_HOUR_VN:00), hệ thống bỏ qua."
-          fi
+          echo "Kích hoạt cập nhật dữ liệu thị trường..."
+          python main.py
 
       - name: Commit and Push
         run: |
