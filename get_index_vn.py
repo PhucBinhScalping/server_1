@@ -1,9 +1,10 @@
 import requests
 import pandas as pd
+from datetime import datetime
 
 def get_data_index():
     try:
-        # 1. Lấy dữ liệu CafeF hiện tại
+        # 1. Lấy dữ liệu CafeF hiện tại từ bảng giá
         re_vni_url = requests.get('https://banggia.cafef.vn/stockhandler.ashx?index=true', timeout=10)
         results_vni = re_vni_url.json()
         name_map = {'VN-Index': 'VNINDEX', 'VN30-Index': 'VN30', 'HNXINDEX': 'HNX', 'HNX30-Index': 'HNX30', 'HNXUPCOMINDEX': 'UPCOM'}
@@ -32,13 +33,26 @@ def get_data_index():
             'HNX30': 'https://cafef.vn/du-lieu/Ajax/PageNew/DataHistory/PriceHistory.ashx?ExchangeType=HNX&Symbol=HNX30-INDEX&PageIndex=1&PageSize=20'
         }
 
+        # Lấy ngày hiện tại theo định dạng DD/MM/YYYY (khớp với trường 'Ngay' trong JSON của CafeF)
+        today_str = datetime.now().strftime('%d/%m/%Y')
         data_list = []
+        
         for name, url in urls.items():
             try:
                 r = requests.get(url, timeout=5).json()
                 history_list = r.get('Data', [])
-                # Phòng hờ ngày cuối tuần bị trùng dữ liệu phiên
-                prev_day = history_list[1] if len(history_list) > 1 else (history_list[0] if history_list else {})
+                
+                prev_day = {}
+                if history_list:
+                    # Kiểm tra dòng đầu tiên có trùng với ngày hiện tại hay không
+                    first_item_date = history_list[0].get('Ngay', '')
+                    
+                    if first_item_date == today_str:
+                        # Nếu trùng ngày hiện tại, lùi xuống 1 dòng (lấy phiên trước đó)
+                        prev_day = history_list[1] if len(history_list) > 1 else history_list[0]
+                    else:
+                        # Nếu không trùng (ví dụ chạy ngoài giờ hoặc sáng sớm chưa cập nhật), lấy luôn dòng đầu tiên
+                        prev_day = history_list[0]
                 
                 vol_raw = str(prev_day.get('KhoiLuongKhopLenh', '0')).replace(',', '')
                 val_raw = str(prev_day.get('GiaTriKhopLenh', '0')).replace(',', '')
@@ -52,7 +66,6 @@ def get_data_index():
         # 3. Tính toán 8 cột dữ liệu đầy đủ
         result_df = pd.merge(df, pd.DataFrame(data_list), on='name', how='left')
         
-        # Hàm tính % tránh lỗi chia cho 0
         def calc_pct(row, col_now, col_prev):
             now = row[col_now]
             prev = row[col_prev]
@@ -62,16 +75,13 @@ def get_data_index():
         result_df['Thanh khoản %'] = result_df.apply(lambda r: calc_pct(r, 'volume', 'volume_2'), axis=1).round(1)
         result_df['Thay đổi GT %'] = result_df.apply(lambda r: calc_pct(r, 'value', 'value_2'), axis=1).round(1)
         
-        # Định dạng màu sắc và text hiển thị chuyên nghiệp
         def get_color(v):
             return '#198754' if v > 0 else '#dc3545' if v < 0 else '#000000'
 
-        # Sắp xếp thứ tự các sàn đúng chuẩn trước khi xuất
         custom_order = ['VNINDEX', 'VN30', 'HNX', 'HNX30', 'UPCOM']
         result_df['name'] = pd.Categorical(result_df['name'], categories=custom_order, ordered=True)
         result_df = result_df.sort_values('name')
 
-        # Tự sinh mã HTML thủ công cực kỳ chặt chẽ (Đảm bảo luôn đủ 8 cột)
         html = '<table border="0"><thead><tr>'
         html += '<th>Chỉ số</th><th>Điểm số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp</th><th>Thanh khoản %</th><th>Thay đổi GT %</th>'
         html += '</tr></thead><tbody>'
