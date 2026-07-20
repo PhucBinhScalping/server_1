@@ -1,13 +1,17 @@
 name: Market Update (Vietnam Time)
 
-# Thêm cụm này chung group với file trên để chúng nhường nhịn nhau
 concurrency:
   group: github-pages-deploy
   cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '0,15,30,45 * * * *'
+    # 1. Chạy tất cả các mốc 15, 30, 45 phút từ 9h sáng đến 14h45 chiều VN (Giờ UTC: 2 đến 7)
+    - cron: '15,30,45 2-7 * * 1-5'
+    # 2. Chạy tất cả các mốc 00 và 15 phút của khung giờ 15h chiều VN (Giờ UTC: 8)
+    - cron: '0,15 8 * * 1-5'
+  workflow_dispatch:
+
 permissions:
   contents: write
 
