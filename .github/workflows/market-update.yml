@@ -39,10 +39,13 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          
+          # THAY ĐỔI Ở ĐÂY: Thêm tất cả các thay đổi (bao gồm biểu đồ hình ảnh sinh ra)
+          git add .
+          
           if ! git diff --staged --quiet; then
             git commit -m "Auto-update market data: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
-            git pull origin main --rebase  # Chống xung đột Git
+            git pull origin main --rebase  # Chống xung đột Git bây giờ sẽ chạy mượt mà
             git push origin main
           else
             echo "Không có dữ liệu mới."
