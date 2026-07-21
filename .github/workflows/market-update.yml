@@ -5,11 +5,15 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  # Lịch chạy tự động (Giờ UTC = Giờ VN - 7)
   schedule:
-    # 1. Chạy tất cả các mốc 15, 30, 45 phút từ 9h sáng đến 14h45 chiều VN (Giờ UTC: 2 đến 7)
+    # 1. Chạy mốc 15, 30, 45 phút từ 9h00 đến 14h45 VN (2h00 - 7h45 UTC) từ T2 - T6
     - cron: '15,30,45 2-7 * * 1-5'
-    # 2. Chạy tất cả các mốc 00 và 15 phút của khung giờ 15h chiều VN (Giờ UTC: 8)
+    
+    # 2. Chạy mốc 00 và 15 phút của khung 15h VN (8h00 & 8h15 UTC) từ T2 - T6
     - cron: '0,15 8 * * 1-5'
+
+  # Cho phép kích hoạt thủ công bằng nút "Run workflow" trên giao diện GitHub
   workflow_dispatch:
 
 permissions:
@@ -18,17 +22,20 @@ permissions:
 jobs:
   update-all:
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v5
-        
+        uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v6
-        with: 
+        uses: actions/setup-python@v5
+        with:
           python-version: '3.10'
-          
+
       - name: Install dependencies
-        run: pip install requests pandas beautifulsoup4 plotly user_agent openpyxl kaleido
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas beautifulsoup4 plotly user_agent openpyxl kaleido
 
       - name: Run Scripts
         run: |
@@ -40,13 +47,13 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # THAY ĐỔI Ở ĐÂY: Thêm tất cả các thay đổi (bao gồm biểu đồ hình ảnh sinh ra)
+          # Thêm tất cả các file đã thay đổi/sinh ra vào Staging
           git add .
           
           if ! git diff --staged --quiet; then
             git commit -m "Auto-update market data: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
-            git pull origin main --rebase  # Chống xung đột Git bây giờ sẽ chạy mượt mà
+            git pull origin main --rebase
             git push origin main
           else
-            echo "Không có dữ liệu mới."
+            echo "Không có dữ liệu mới để cập nhật."
           fi
