@@ -7,11 +7,11 @@ concurrency:
 on:
   # Lịch chạy tự động (Giờ UTC = Giờ VN - 7)
   schedule:
-    # 1. Chạy mốc 15, 30, 45 phút từ 9h00 đến 14h45 VN (2h00 - 7h45 UTC) từ T2 - T6
-    - cron: '0,15,30,45 * * * *'
+    # 1. Chạy mỗi 15 phút (phút 0, 15, 30, 45) từ 9h00 đến 14h45 VN (tương đương 02:00 đến 07:45 UTC) từ Thứ 2 đến Thứ 6 (1-5)
+    - cron: '0,15,30,45 2-7 * * 1-5'
     
-    # 2. Chạy mốc 00 và 15 phút của khung 15h VN (8h00 & 8h15 UTC) từ T2 - T6
-    #- cron: '0,15 8 * * 1-5'
+    # 2. Chạy mốc 00 và 15 phút của khung 15h VN (8h00 & 8h15 UTC) từ Thứ 2 đến Thứ 6
+    - cron: '0,15 8 * * 1-5'
 
   # Cho phép kích hoạt thủ công bằng nút "Run workflow" trên giao diện GitHub
   workflow_dispatch:
