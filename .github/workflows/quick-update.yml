@@ -1,0 +1,47 @@
+name: Quick Update Index
+
+# CHÈN VÀO ĐÂY: Giúp xếp hàng các lượt chạy deploy, tránh lỗi nghẽn hệ thống
+concurrency:
+  group: github-pages-deploy
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: '0,10,20,30,40,50 * * * *'
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v5
+        
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: pip install requests pandas beautifulsoup4 datetime pytz
+          
+      - name: Run Index Update
+        run: python update_index_only.py
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --staged --quiet; then
+            git commit -m "Quick update index: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
+            git pull origin main --rebase  # Chống xung đột Git
+            git push origin main
+          else
+            echo "Không có dữ liệu mới."
+          fi
