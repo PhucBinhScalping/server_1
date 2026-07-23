@@ -80,7 +80,7 @@ def main():
         print("Không có dữ liệu cổ phiếu ngành.")
         return
 
-    df_final = pd.DataFrame(results).sort_values('percent_change', ascending=False)
+    df_final = pd.DataFrame(results)#.sort_values('percent_change', ascending=False)
     
     vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
