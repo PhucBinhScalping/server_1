@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-
 <html lang="vi">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-<meta content="Cập nhật diễn biến thị trường, chỉ số tài chính và giá vàng mới nhất tại Phúc Bình Scalping." name="description"/>
-<title>Diễn Biến Thị Trường - Phúc Bình Scalping</title>
-<link href="logo.png" rel="icon" type="image/png"/>
-<style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Cập nhật diễn biến thị trường, chỉ số tài chính và giá vàng mới nhất tại Phúc Bình Scalping.">
+    <title>Diễn Biến Thị Trường - Phúc Bình Scalping</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <style>
         /* --- RESET & BASE --- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
@@ -120,248 +119,264 @@
     </style>
 </head>
 <body>
-<nav class="navbar">
-<div class="navbar-container">
-<ul class="navbar-menu">
-<li class="navbar-item"><a href="https://phucbinhscalping.online">Trang chủ</a></li>
-<li class="navbar-item active"><a href="#">Diễn biến thị trường</a></li>
-<li class="navbar-item"><a href="https://phucbinhscalping.online/bieu-do-ky-thuat-du-phong.html">Biểu đồ kỹ thuật</a></li>
-<li class="navbar-item"><a href="https://phucbinhscalping.online/tat-ca-bai-viet.html">Bài Viết</a></li>
-</ul>
-</div>
-</nav>
-<button class="sticky-contact-btn" id="openContactBtn">💬 Liên hệ tư vấn</button>
-<div class="main-wrapper">
-<div class="container">
-<h1>📈 Diễn Biến Thị Trường</h1>
-<div class="market-update-box">
-<!-- Vùng chứa biểu đồ có thanh cuộn bảo vệ -->
-<div class="content-scroll-wrapper">
-<div style="height:500px; width:100%;"> <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-<script charset="utf-8" crossorigin="anonymous" integrity="sha256-jvTGqxNp8AGWEcvNLVuKr+8j5dGe9Yw51LQkmDH+IYA=" src="https://cdn.plot.ly/plotly-3.7.0.min.js"></script> <div class="plotly-graph-div" id="3ba434e4-e328-4c36-82e5-bb33d7acee5b" style="height:100%; width:100%;"></div> <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("3ba434e4-e328-4c36-82e5-bb33d7acee5b")) {                    Plotly.newPlot(                        "3ba434e4-e328-4c36-82e5-bb33d7acee5b",                        [{"marker":{"color":["#198754","#198754","#198754","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545","#dc3545"]},"name":"BĐ giá","textposition":"outside","texttemplate":"%{y:.1f}%","x":["Vingroup","Dầu -Khí Đốt","Chứng Khoán","Y Tế - DượC","Ngân Hàng","Năng Lượng - Tb Điện","Bảo Hiểm - Dv Tài Chính","Vlxd-Nội Thất","Đtc","Thực Phẩm-Thủy Sản","Thép","Hóa Chất -Nhựa","Công Nghệ - TruyềN Thông","Vận Tải - Logistics","Bđs","Bán Lẻ - Ôtô - Phụ TùNg Ô Tô","Công Nghiệp - Kcn - DệT May"],"y":{"dtype":"f8","bdata":"lPYGX5gM+z9nQ6\u002fdAU\u002fgPy\u002fE6o8wDKg\u002firDh6ZWy0L8aijve5LfYv5Kqa7AvV+C\u002fESCEAvPR4L+ASL99Hbjhv9GeuAnk\u002f+O\u002fLCEf9Gz25L9O845TdGTtv6l\u002fI5TRW\u002fG\u002fJCVQ1+3G8r\u002f3K4pEjlrzv9N0AeB2LPW\u002fK4cW2c63+L\u002fr+VRDMwn8vw=="},"type":"bar"},{"line":{"color":"#FFD700","width":3},"name":"KL\u002fTB21","x":["Vingroup","Dầu -Khí Đốt","Chứng Khoán","Y Tế - DượC","Ngân Hàng","Năng Lượng - Tb Điện","Bảo Hiểm - Dv Tài Chính","Vlxd-Nội Thất","Đtc","Thực Phẩm-Thủy Sản","Thép","Hóa Chất -Nhựa","Công Nghệ - TruyềN Thông","Vận Tải - Logistics","Bđs","Bán Lẻ - Ôtô - Phụ TùNg Ô Tô","Công Nghiệp - Kcn - DệT May"],"y":{"dtype":"f8","bdata":"l7n\u002f6O8\u002f4z\u002fnSrzwEHjfPz885fnAeeA\u002fyrGWE7Nk1j+7ZtF473TkPx7APOSvXOE\u002f8pPAedT01T84Ca1gdwbqP79Sco2yPOU\u002frMU4LNjA6D\u002fCH9WHyz\u002fxP4\u002ffh\u002fcv+uM\u002fzgf8s\u002f5d3j9pDo946FryPxpyHP+k+OY\u002fexuCldD75D91S1u3Rh3qPw=="},"yaxis":"y2","type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"font":{"color":"white"},"margin":{"l":20,"r":20,"t":50,"b":120},"yaxis2":{"title":{"text":"KL\u002fTB21"},"overlaying":"y","side":"right"},"xaxis":{"tickangle":-45},"title":{"text":"Biến động ngành 23-07-2026 13:23:05"},"paper_bgcolor":"#333333","plot_bgcolor":"#333333","height":500,"yaxis":{"title":{"text":"BĐ giá (%)"}},"autosize":true},                        {"responsive": true}                    )                };            </script> </div>
-</div>
-</div>
-<h2 style="margin-top: 40px; color: #002060;">📈 Chỉ số Việt Nam</h2>
-<div class="market-update-box">
-<!-- Vùng chứa bảng Việt Nam -->
-<div class="content-scroll-wrapper">
-<div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 5px; font-style: italic;">
-        Cập nhật: 23-07-2026 13:23:05
-    </div>
-<table border="0"><thead><tr><th>Chỉ số</th><th>Điểm số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp (Tỷ)</th><th>Thanh khoản %</th></tr></thead><tbody><tr><td style="font-weight:bold;">VNINDEX</td><td style="font-weight:bold;">1,678.53</td><td style="color:#198754; font-weight:bold;">10.00</td><td style="color:#198754; font-weight:bold;">0.60%</td><td>481,230,213</td><td>10,735.6</td><td style="color:#dc3545; font-weight:bold;">-51.48%</td></tr><tr><td style="font-weight:bold;">VN30</td><td style="font-weight:bold;">1,829.76</td><td style="color:#198754; font-weight:bold;">2.86</td><td style="color:#198754; font-weight:bold;">0.16%</td><td>226,677,779</td><td>6,547.6</td><td style="color:#dc3545; font-weight:bold;">-49.31%</td></tr><tr><td style="font-weight:bold;">HNX</td><td style="font-weight:bold;">273.73</td><td style="color:#dc3545; font-weight:bold;">-1.76</td><td style="color:#dc3545; font-weight:bold;">-0.64%</td><td>37,218,982</td><td>579.6</td><td style="color:#dc3545; font-weight:bold;">-44.75%</td></tr><tr><td style="font-weight:bold;">HNX30</td><td style="font-weight:bold;">454.19</td><td style="color:#dc3545; font-weight:bold;">-6.13</td><td style="color:#dc3545; font-weight:bold;">-1.33%</td><td>27,976,212</td><td>488.2</td><td style="color:#dc3545; font-weight:bold;">-40.7%</td></tr><tr><td style="font-weight:bold;">UPCOM</td><td style="font-weight:bold;">124.71</td><td style="color:#dc3545; font-weight:bold;">-0.39</td><td style="color:#dc3545; font-weight:bold;">-0.31%</td><td>14,644,101</td><td>213.3</td><td style="color:#dc3545; font-weight:bold;">-57.9%</td></tr></tbody></table>
-</div>
-</div>
-<h2 style="color: #002060;">🌍 Chỉ Số Thế Giới &amp; Giá Vàng</h2>
-<div class="market-update-box" id="world-table-container">
-<div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
-            Cập nhật: 23-07-2026 14:17:42
+
+    <nav class="navbar">
+        <div class="navbar-container">
+            <ul class="navbar-menu">
+                <li class="navbar-item"><a href="https://phucbinhscalping.online">Trang chủ</a></li>
+                <li class="navbar-item active"><a href="#">Diễn biến thị trường</a></li>
+                <li class="navbar-item"><a href="https://phucbinhscalping.online/bieu-do-ky-thuat-du-phong.html">Biểu đồ kỹ thuật</a></li>
+                <li class="navbar-item"><a href="https://phucbinhscalping.online/tat-ca-bai-viet.html">Bài Viết</a></li>
+            </ul>
         </div>
-<div class="market-section" style="margin-bottom: 30px; width: 100%;">
-<h3 style="text-align:center; margin-bottom: 12px; color: #002060;">Thị trường Thế giới</h3>
-<div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-<table><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr><tr>
-<td>Dow Jones</td>
-<td style="color:red">52218.58</td>
-<td style="color:red">-6.06</td>
-<td style="color:red">-0.01%</td>
-</tr><tr>
-<td>Nasdaq</td>
-<td style="color:red">25690.9</td>
-<td style="color:red">-146.3</td>
-<td style="color:red">-0.57%</td>
-</tr><tr>
-<td>S&amp;P 500</td>
-<td style="color:red">7498.96</td>
-<td style="color:red">-10.24</td>
-<td style="color:red">-0.14%</td>
-</tr><tr>
-<td>Hang Seng</td>
-<td style="color:green">25158.0</td>
-<td style="color:green">265.34</td>
-<td style="color:green">1.07%</td>
-</tr><tr>
-<td>Shanghai</td>
-<td style="color:green">3876.78</td>
-<td style="color:green">9.74</td>
-<td style="color:green">0.25%</td>
-</tr><tr>
-<td>Nikkei 225</td>
-<td style="color:green">66374.0</td>
-<td style="color:green">258.4</td>
-<td style="color:green">0.39%</td>
-</tr><tr>
-<td>KOSPI</td>
-<td style="color:green">7096.89</td>
-<td style="color:green">299.19</td>
-<td style="color:green">4.4%</td>
-</tr><tr>
-<td>Taiwan Weighted</td>
-<td style="color:green">44850.81</td>
-<td style="color:green">25.03</td>
-<td style="color:green">0.06%</td>
-</tr><tr>
-<td>FTSE 100</td>
-<td style="color:red">10682.2</td>
-<td style="color:red">-34.77</td>
-<td style="color:red">-0.32%</td>
-</tr><tr>
-<td>DAX</td>
-<td style="color:red">24930.0</td>
-<td style="color:red">-244.1</td>
-<td style="color:red">-0.97%</td>
-</tr><tr>
-<td>CAC 40</td>
-<td style="color:red">8344.17</td>
-<td style="color:red">-93.72</td>
-<td style="color:red">-1.11%</td>
-</tr><tr>
-<td>FTSE Straits Times Singapore</td>
-<td style="color:red">5557.48</td>
-<td style="color:red">-37.94</td>
-<td style="color:red">-0.68%</td>
-</tr><tr>
-<td>Nifty 50</td>
-<td style="color:red">23859.85</td>
-<td style="color:red">-136.4</td>
-<td style="color:red">-0.57%</td>
-</tr><tr>
-<td>S&amp;P/ASX 200</td>
-<td style="color:green">8839.0</td>
-<td style="color:green">16.0</td>
-<td style="color:green">0.18%</td>
-</tr><tr>
-<td>IDX Composite</td>
-<td style="color:green">6408.49</td>
-<td style="color:green">74.02</td>
-<td style="color:green">1.17%</td>
-</tr><tr>
-<td>US Dollar Index</td>
-<td style="color:red">101.04</td>
-<td style="color:red">-0.09</td>
-<td style="color:red">-0.09%</td>
-</tr></table>
-</div>
-</div>
-<div class="market-section" style="width: 100%;">
-<h3 style="text-align:center; margin-bottom: 12px; color: #002060;">Giá Vàng</h3>
-<div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-<table><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr><tr>
-<td>Gold Spot US Dollar</td>
-<td style="color:red">4,110.16 $</td>
-<td style="color:red">-19.93</td>
-<td style="color:red">-0.48%</td>
-</tr><tr>
-<td>Silver Spot US Dollar</td>
-<td style="color:red">59.13 $</td>
-<td style="color:red">-0.60</td>
-<td style="color:red">-1.00%</td>
-</tr><tr>
-<td>Vàng Miếng SJC</td>
-<td style="color:red">140,000</td>
-<td style="color:red">-6,000</td>
-<td style="color:red">-4.11%</td>
-</tr><tr>
-<td>Vàng Nhẫn SJC</td>
-<td style="color:red">139,000</td>
-<td style="color:red">-6,000</td>
-<td style="color:red">-4.14%</td>
-</tr><tr>
-<td>Vàng Nhẫn DOJI</td>
-<td style="color:green">147,500</td>
-<td style="color:green">1,000</td>
-<td style="color:green">0.68%</td>
-</tr><tr>
-<td>Vàng Nữ trang DOJI</td>
-<td style="color:green">142,000</td>
-<td style="color:green">1,000</td>
-<td style="color:green">0.71%</td>
-</tr><tr>
-<td>Vàng Nhẫn PNJ</td>
-<td style="color:red">140,000</td>
-<td style="color:red">-5,000</td>
-<td style="color:red">-3.45%</td>
-</tr><tr>
-<td>Vàng Nữ trang PNJ</td>
-<td style="color:red">138,500</td>
-<td style="color:red">-4,500</td>
-<td style="color:red">-3.15%</td>
-</tr><tr>
-<td>Vàng Miếng Bảo Tín Minh Châu</td>
-<td style="color:red">143,200</td>
-<td style="color:red">-4,000</td>
-<td style="color:red">-2.72%</td>
-</tr><tr>
-<td>Vàng Trang sức Bảo Tín Minh Châu</td>
-<td style="color:red">142,100</td>
-<td style="color:red">-4,000</td>
-<td style="color:red">-2.74%</td>
-</tr><tr>
-<td>Vàng Nhẫn Bảo Tín Mạnh Hải</td>
-<td style="color:red">143,200</td>
-<td style="color:red">-2,800</td>
-<td style="color:red">-1.92%</td>
-</tr><tr>
-<td>Vàng Trang sức Bảo Tín Mạnh Hải</td>
-<td style="color:red">142,200</td>
-<td style="color:red">-2,800</td>
-<td style="color:red">-1.93%</td>
-</tr><tr>
-<td>Vàng Nhẫn Ngọc Hải</td>
-<td style="color:red">143,000</td>
-<td style="color:red">-1,000</td>
-<td style="color:red">-0.69%</td>
-</tr><tr>
-<td>Vàng Trang sức Ngọc Hải</td>
-<td style="color:red">143,000</td>
-<td style="color:red">-1,000</td>
-<td style="color:red">-0.69%</td>
-</tr><tr>
-<td>Vàng Nhẫn Mi Hồng</td>
-<td style="color:green">138,500</td>
-<td style="color:green">0</td>
-<td style="color:green">0.0%</td>
-</tr><tr>
-<td>Bạc Phú Quý (1Kg)</td>
-<td style="color:red">60,506</td>
-<td style="color:red">-826</td>
-<td style="color:red">-1.35%</td>
-</tr><tr>
-<td>Bạc Phú Quý (1L)</td>
-<td style="color:red">2,269</td>
-<td style="color:red">-31</td>
-<td style="color:red">-1.35%</td>
-</tr></table>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="modal-overlay" id="contactModal" style="display:none;">
-<div class="modal-box">
-<h3>💬 Đăng Ký Tư Vấn</h3>
-<form action="https://formspree.io/f/xrewzpjl" method="POST">
-<div class="form-group">
-<label for="name">Họ và Tên:</label>
-<input id="name" name="Họ Tên" placeholder="Nguyễn Văn A" required="" type="text"/>
-</div>
-<div class="form-group">
-<label for="phone">Số điện thoại (Zalo):</label>
-<input id="phone" name="Số Điện Thoại" placeholder="0901234568" required="" type="tel"/>
-</div>
-<div class="form-group">
-<label for="email">Địa chỉ Gmail:</label>
-<input id="email" name="Gmail" placeholder="name@gmail.com" required="" type="email"/>
-</div>
-<div class="form-group">
-<label for="message">Nội dung cần hỗ trợ:</label>
-<textarea id="message" name="Nội Dung Cần Tư Vấn" placeholder="Ví dụ: Cài đặt phần mềm..." required="" rows="3"></textarea>
-</div>
-<button class="btn-submit" type="submit">Gửi Thông Tin Cho AD</button>
-</form>
-<button class="btn-close" id="closeContactBtn">Đóng</button>
-</div>
-</div>
-<script>
+    </nav>
+
+    <button class="sticky-contact-btn" id="openContactBtn">💬 Liên hệ tư vấn</button>
+
+    <div class="main-wrapper">
+        <div class="container">
+            <h1>📈 Diễn Biến Thị Trường</h1>
+            <div class="market-update-box">
+                <!-- Vùng chứa biểu đồ có thanh cuộn bảo vệ -->
+                <div class="content-scroll-wrapper">
+                    <div style="height:500px; width:100%;">                        <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.7.0.min.js" integrity="sha256-jvTGqxNp8AGWEcvNLVuKr+8j5dGe9Yw51LQkmDH+IYA=" crossorigin="anonymous"></script>                <div id="293aeb38-e1b1-4356-986a-7f569c69ee76" class="plotly-graph-div" style="height:100%; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("293aeb38-e1b1-4356-986a-7f569c69ee76")) {                    Plotly.newPlot(                        "293aeb38-e1b1-4356-986a-7f569c69ee76",                        [{"marker":{"color":["#198754","#198754","#198754","#198754","#198754","#198754","#198754","#198754","#198754","#198754","#198754","#198754","#198754","#198754","#dc3545","#dc3545","#dc3545"]},"name":"BĐ giá","textposition":"outside","texttemplate":"%{y:.1f}%","x":["Vingroup","Dầu -Khí Đốt","Chứng Khoán","Năng Lượng - Tb Điện","Vlxd-Nội Thất","Thép","Công Nghệ - TruyềN Thông","Công Nghiệp - Kcn - DệT May","Ngân Hàng","Bán Lẻ - Ôtô - Phụ TùNg Ô Tô","Bảo Hiểm - Dv Tài Chính","Hóa Chất -Nhựa","Bđs","Thực Phẩm-Thủy Sản","Vận Tải - Logistics","Đtc","Y Tế - DượC"],"y":{"dtype":"f8","bdata":"I0p7gy\u002fsCUDEiBt7pyAFQCjtDb4wmQFANQXx\u002f6Y2+D+q8dJNYjD4P07zjlN0xPI\u002fVcDuEmAJ8j\u002f7YIKOeYbsP9IZGHlZE98\u002fOSAcxreK2z+rSbM44SHbP+9XFIkcNdc\u002fG14PYYay1j8usp3vp4bSP8AwmSoYlXS\u002fzxs6ULoHq7+zDHGsi9u4vw=="},"type":"bar"},{"line":{"color":"#FFD700","width":3},"name":"KL\u002fTB21","x":["Vingroup","Dầu -Khí Đốt","Chứng Khoán","Năng Lượng - Tb Điện","Vlxd-Nội Thất","Thép","Công Nghệ - TruyềN Thông","Công Nghiệp - Kcn - DệT May","Ngân Hàng","Bán Lẻ - Ôtô - Phụ TùNg Ô Tô","Bảo Hiểm - Dv Tài Chính","Hóa Chất -Nhựa","Bđs","Thực Phẩm-Thủy Sản","Vận Tải - Logistics","Đtc","Y Tế - DượC"],"y":{"dtype":"f8","bdata":"CnIhNPdt7z\u002fkIFZ1TifwP20GLcz3nvA\u002fdQPvIQQk8D963crlgD70PyFjsiR5Jfg\u002flg10vGSY6z9mbUHo1Zb0P6qvNOdnj\u002fI\u002f0S394bST8D847hzqHs3kP7kJ3lNRUfQ\u002fx1kPljH28j\u002f2YzVLuKHyP39JovKtuvg\u002f3A0D3P7C8D82gyzGt2P0Pw=="},"yaxis":"y2","type":"scatter"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"font":{"color":"white"},"margin":{"l":20,"r":20,"t":50,"b":120},"yaxis2":{"title":{"text":"KL\u002fTB21"},"overlaying":"y","side":"right"},"xaxis":{"tickangle":-45},"title":{"text":"Biến động ngành 23-07-2026 15:25:39"},"paper_bgcolor":"#333333","plot_bgcolor":"#333333","height":500,"yaxis":{"title":{"text":"BĐ giá (%)"}},"autosize":true},                        {"responsive": true}                    )                };            </script>        </div>
+                </div>
+            </div>
+    
+            <h2 style="margin-top: 40px; color: #002060;">📈 Chỉ số Việt Nam</h2>
+            <div class="market-update-box">
+                <!-- Vùng chứa bảng Việt Nam -->
+                <div class="content-scroll-wrapper">
+                    
+    <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 5px; font-style: italic;">
+        Cập nhật: 23-07-2026 15:25:39
+    </div>
+    <table border="0"><thead><tr><th>Chỉ số</th><th>Điểm số</th><th>Thay đổi</th><th>%</th><th>KL Khớp</th><th>GT Khớp (Tỷ)</th><th>Thanh khoản %</th></tr></thead><tbody><tr><td style="font-weight:bold;">VNINDEX</td><td style="font-weight:bold;">1,699.38</td><td style="color:#198754; font-weight:bold;">30.85</td><td style="color:#198754; font-weight:bold;">1.85%</td><td>864,451,379</td><td>20,033.9</td><td style="color:#dc3545; font-weight:bold;">-12.84%</td></tr><tr><td style="font-weight:bold;">VN30</td><td style="font-weight:bold;">1,845.32</td><td style="color:#198754; font-weight:bold;">18.42</td><td style="color:#198754; font-weight:bold;">1.01%</td><td>409,330,562</td><td>12,112.1</td><td style="color:#dc3545; font-weight:bold;">-8.46%</td></tr><tr><td style="font-weight:bold;">HNX</td><td style="font-weight:bold;">281.07</td><td style="color:#198754; font-weight:bold;">5.58</td><td style="color:#198754; font-weight:bold;">2.03%</td><td>69,578,921</td><td>1,103.1</td><td style="color:#198754; font-weight:bold;">3.29%</td></tr><tr><td style="font-weight:bold;">HNX30</td><td style="font-weight:bold;">464.88</td><td style="color:#198754; font-weight:bold;">4.56</td><td style="color:#198754; font-weight:bold;">0.99%</td><td>53,139,115</td><td>936.2</td><td style="color:#198754; font-weight:bold;">12.64%</td></tr><tr><td style="font-weight:bold;">UPCOM</td><td style="font-weight:bold;">125.53</td><td style="color:#198754; font-weight:bold;">0.43</td><td style="color:#198754; font-weight:bold;">0.34%</td><td>32,716,435</td><td>402.3</td><td style="color:#dc3545; font-weight:bold;">-5.94%</td></tr></tbody></table>
+    
+                </div>
+            </div>
+            
+            <h2 style="color: #002060;">🌍 Chỉ Số Thế Giới & Giá Vàng</h2>
+            <div class="market-update-box" id="world-table-container">
+                <!-- Vùng chứa bảng Thế giới -->
+                <div class="content-scroll-wrapper">
+                    
+    <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 15px; font-style: italic;">
+        Cập nhật: 23-07-2026 15:25:39
+    </div>
+    
+    <div class="market-section" style="margin-bottom: 30px; width: 100%;">
+        <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Thị trường Thế giới</h3>
+        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table><tr><th>Chỉ số</th><th>Giá</th><th>+/-</th><th>%</th></tr><tr>
+                <td>Dow Jones</td>
+                <td style='color:red'>52218.58</td>
+                <td style='color:red'>-6.06</td>
+                <td style='color:red'>-0.01%</td>
+            </tr><tr>
+                <td>Nasdaq</td>
+                <td style='color:red'>25690.9</td>
+                <td style='color:red'>-146.3</td>
+                <td style='color:red'>-0.57%</td>
+            </tr><tr>
+                <td>S&P 500</td>
+                <td style='color:red'>7498.96</td>
+                <td style='color:red'>-10.24</td>
+                <td style='color:red'>-0.14%</td>
+            </tr><tr>
+                <td>Hang Seng</td>
+                <td style='color:green'>25174.5</td>
+                <td style='color:green'>281.84</td>
+                <td style='color:green'>1.13%</td>
+            </tr><tr>
+                <td>Shanghai</td>
+                <td style='color:green'>3876.78</td>
+                <td style='color:green'>9.74</td>
+                <td style='color:green'>0.25%</td>
+            </tr><tr>
+                <td>Nikkei 225</td>
+                <td style='color:green'>66374.0</td>
+                <td style='color:green'>258.4</td>
+                <td style='color:green'>0.39%</td>
+            </tr><tr>
+                <td>KOSPI</td>
+                <td style='color:green'>7096.89</td>
+                <td style='color:green'>299.19</td>
+                <td style='color:green'>4.4%</td>
+            </tr><tr>
+                <td>Taiwan Weighted</td>
+                <td style='color:green'>44850.81</td>
+                <td style='color:green'>25.03</td>
+                <td style='color:green'>0.06%</td>
+            </tr><tr>
+                <td>FTSE 100</td>
+                <td style='color:red'>10709.89</td>
+                <td style='color:red'>-7.08</td>
+                <td style='color:red'>-0.07%</td>
+            </tr><tr>
+                <td>DAX</td>
+                <td style='color:red'>25039.18</td>
+                <td style='color:red'>-134.92</td>
+                <td style='color:red'>-0.54%</td>
+            </tr><tr>
+                <td>CAC 40</td>
+                <td style='color:red'>8365.5</td>
+                <td style='color:red'>-72.39</td>
+                <td style='color:red'>-0.86%</td>
+            </tr><tr>
+                <td>FTSE Straits Times Singapore</td>
+                <td style='color:red'>5574.66</td>
+                <td style='color:red'>-20.76</td>
+                <td style='color:red'>-0.37%</td>
+            </tr><tr>
+                <td>Nifty 50</td>
+                <td style='color:red'>23858.15</td>
+                <td style='color:red'>-138.1</td>
+                <td style='color:red'>-0.58%</td>
+            </tr><tr>
+                <td>S&P/ASX 200</td>
+                <td style='color:green'>8839.0</td>
+                <td style='color:green'>16.0</td>
+                <td style='color:green'>0.18%</td>
+            </tr><tr>
+                <td>IDX Composite</td>
+                <td style='color:red'>6329.44</td>
+                <td style='color:red'>-5.03</td>
+                <td style='color:red'>-0.08%</td>
+            </tr><tr>
+                <td>US Dollar Index</td>
+                <td style='color:red'>101.1</td>
+                <td style='color:red'>-0.02</td>
+                <td style='color:red'>-0.02%</td>
+            </tr></table>
+        </div>
+    </div>
+
+    <div class="market-section" style="width: 100%;">
+        <h3 style="text-align:center; margin-bottom: 12px; color: #002060; font-size: 1.5em;">Giá Vàng</h3>
+        <div class="content-scroll-wrapper" style="width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table><tr><th>Loại</th><th>Giá</th><th>+/-</th><th>%</th></tr><tr>
+                <td>Gold Spot US Dollar</td>
+                <td style='color:red'>4,090.33 $</td>
+                <td style='color:red'>-39.76</td>
+                <td style='color:red'>-0.96%</td>
+            </tr><tr>
+                <td>Silver Spot US Dollar</td>
+                <td style='color:red'>58.84 $</td>
+                <td style='color:red'>-0.89</td>
+                <td style='color:red'>-1.49%</td>
+            </tr><tr>
+                <td>Vàng Miếng SJC</td>
+                <td style='color:red'>140,000</td>
+                <td style='color:red'>-6,000</td>
+                <td style='color:red'>-4.11%</td>
+            </tr><tr>
+                <td>Vàng Nhẫn SJC</td>
+                <td style='color:red'>139,000</td>
+                <td style='color:red'>-6,000</td>
+                <td style='color:red'>-4.14%</td>
+            </tr><tr>
+                <td>Vàng Nhẫn DOJI</td>
+                <td style='color:green'>147,500</td>
+                <td style='color:green'>1,000</td>
+                <td style='color:green'>0.68%</td>
+            </tr><tr>
+                <td>Vàng Nữ trang DOJI</td>
+                <td style='color:green'>142,000</td>
+                <td style='color:green'>1,000</td>
+                <td style='color:green'>0.71%</td>
+            </tr><tr>
+                <td>Vàng Nhẫn PNJ</td>
+                <td style='color:red'>140,000</td>
+                <td style='color:red'>-5,000</td>
+                <td style='color:red'>-3.45%</td>
+            </tr><tr>
+                <td>Vàng Nữ trang PNJ</td>
+                <td style='color:red'>138,500</td>
+                <td style='color:red'>-4,500</td>
+                <td style='color:red'>-3.15%</td>
+            </tr><tr>
+                <td>Vàng Miếng Bảo Tín Minh Châu</td>
+                <td style='color:red'>143,500</td>
+                <td style='color:red'>-3,700</td>
+                <td style='color:red'>-2.51%</td>
+            </tr><tr>
+                <td>Vàng Trang sức Bảo Tín Minh Châu</td>
+                <td style='color:red'>142,500</td>
+                <td style='color:red'>-3,600</td>
+                <td style='color:red'>-2.46%</td>
+            </tr><tr>
+                <td>Vàng Nhẫn Bảo Tín Mạnh Hải</td>
+                <td style='color:red'>143,350</td>
+                <td style='color:red'>-2,650</td>
+                <td style='color:red'>-1.82%</td>
+            </tr><tr>
+                <td>Vàng Trang sức Bảo Tín Mạnh Hải</td>
+                <td style='color:red'>142,350</td>
+                <td style='color:red'>-2,650</td>
+                <td style='color:red'>-1.83%</td>
+            </tr><tr>
+                <td>Vàng Nhẫn Ngọc Hải</td>
+                <td style='color:red'>143,000</td>
+                <td style='color:red'>-1,000</td>
+                <td style='color:red'>-0.69%</td>
+            </tr><tr>
+                <td>Vàng Trang sức Ngọc Hải</td>
+                <td style='color:red'>143,000</td>
+                <td style='color:red'>-1,000</td>
+                <td style='color:red'>-0.69%</td>
+            </tr><tr>
+                <td>Vàng Nhẫn Mi Hồng</td>
+                <td style='color:green'>138,500</td>
+                <td style='color:green'>0</td>
+                <td style='color:green'>0.0%</td>
+            </tr><tr>
+                <td>Bạc Phú Quý (1Kg)</td>
+                <td style='color:red'>60,346</td>
+                <td style='color:red'>-986</td>
+                <td style='color:red'>-1.61%</td>
+            </tr><tr>
+                <td>Bạc Phú Quý (1L)</td>
+                <td style='color:red'>2,263</td>
+                <td style='color:red'>-37</td>
+                <td style='color:red'>-1.61%</td>
+            </tr></table>
+        </div>
+    </div>
+    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="contactModal" style="display:none;">
+        <div class="modal-box">
+            <h3>💬 Đăng Ký Tư Vấn</h3>
+            <form action="https://formspree.io/f/xrewzpjl" method="POST">
+                <div class="form-group">
+                    <label for="name">Họ và Tên:</label>
+                    <input type="text" id="name" name="Họ Tên" placeholder="Nguyễn Văn A" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Số điện thoại (Zalo):</label>
+                    <input type="tel" id="phone" name="Số Điện Thoại" placeholder="0901234568" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Địa chỉ Gmail:</label>
+                    <input type="email" id="email" name="Gmail" placeholder="name@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">Nội dung cần hỗ trợ:</label>
+                    <textarea id="message" name="Nội Dung Cần Tư Vấn" rows="3" placeholder="Ví dụ: Cài đặt phần mềm..." required></textarea>
+                </div>
+                <button type="submit" class="btn-submit">Gửi Thông Tin Cho AD</button>
+            </form>
+            <button class="btn-close" id="closeContactBtn">Đóng</button>
+        </div>
+    </div>
+    
+    <script>
         const modal = document.getElementById('contactModal');
         const openBtn = document.getElementById('openContactBtn');
         const closeBtn = document.getElementById('closeContactBtn');
