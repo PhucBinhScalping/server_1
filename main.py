@@ -31,7 +31,7 @@ def tinh_du_lieu_cp(symbol):
         df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
         df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
         
-        if df['volume'].tail(100).mean() < 500000:
+        if df['volume'].tail(100).mean() < 396000:
             return None
 
         last = df.iloc[-1]
