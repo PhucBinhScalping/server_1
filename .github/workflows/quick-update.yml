@@ -41,7 +41,12 @@ jobs:
           git add index.html
           if ! git diff --staged --quiet; then
             git commit -m "Quick update index: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
-            git pull origin main --rebase  # Chống xung đột Git
+            
+            # Khôi phục/xóa tất cả thay đổi dư thừa còn sót lại để thư mục làm việc hoàn toàn "sạch"
+            git checkout -- .
+            git clean -fd
+            
+            git pull origin main --rebase
             git push origin main
           else
             echo "Không có dữ liệu mới."
