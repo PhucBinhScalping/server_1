@@ -2,16 +2,13 @@ name: Market Update (Vietnam Time)
 
 concurrency:
   group: github-pages-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 on:
   # Lịch chạy tự động (Giờ UTC = Giờ VN - 7)
   schedule:
-    # Buổi sáng: Chạy lúc 09:00, 09:30, 10:00, 10:30, 11:00, 11:30
-    - cron: '0,30 2-4 * * 1-5'
+    - cron: '0,20,40 * * * *'
     
-    # Buổi chiều: Chạy lúc 13:00, 13:30, 14:00, 14:30
-    - cron: '0,30 6-8 * * 1-5'
     
   # Cho phép kích hoạt thủ công bằng nút "Run workflow" trên giao diện GitHub
   workflow_dispatch:
@@ -31,16 +28,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
+          
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests pandas beautifulsoup4 plotly user_agent openpyxl kaleido pytz
-
-      - name: Run Scripts
-        run: |
-          echo "Kích hoạt cập nhật dữ liệu thị trường..."
-          python main.py
+        run: pip install requests pandas beautifulsoup4 datetime pytz
+          
+      - name: Run Index Update
+        run: python update_index_only.py
       
 
       - name: Commit and Push
