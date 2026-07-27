@@ -30,7 +30,7 @@ def tinh_du_lieu_cp(symbol):
         
         # 2. Thiết lập thời gian (TradingView API sử dụng timestamp giây)
         todate = dt.datetime.now()
-        fromdate = todate - timedelta(days=365) # Mở rộng ra 365 ngày để đảm bảo đủ >100 phiên giao dịch (trừ lễ/cuối tuần)
+        fromdate = todate - timedelta(days=156) # Mở rộng ra 365 ngày để đảm bảo đủ >100 phiên giao dịch (trừ lễ/cuối tuần)
         
         from_timestamp = int(fromdate.timestamp())
         to_timestamp = int(todate.timestamp())
@@ -76,7 +76,7 @@ def tinh_du_lieu_cp(symbol):
         if len(df) < 100:
             return None
             
-        if df['volume'].tail(100).mean() < 396000:
+        if df['volume'].tail(100).mean() < 200000:
             return None
 
         # Lấy dữ liệu phiên gần nhất (mới nhất)
