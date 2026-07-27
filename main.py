@@ -14,32 +14,60 @@ OUTPUT_FILE = "index.html"
 HEAD = {"User-Agent": "Mozilla/5.0"}
 session = requests.Session()
 
+import datetime as dt
+from datetime import timedelta
+import pandas as pd
+import requests
+
 def tinh_du_lieu_cp(symbol):
-    vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
-    ngay_start = (datetime.now(vn_tz) - timedelta(days=150)).strftime("%Y-%m-%d")
-    url = f'https://api-finfo.vndirect.com.vn/v4/stock_prices?sort=date&q=code:{symbol.upper()}~date:gte:{ngay_start}&size=150&page=1'
-    
     try:
-        r = session.get(url, headers=HEAD, timeout=10)
-        data = r.json().get('data', [])
-        if not data: return None
+        # Thiết lập thời gian (lấy khoảng 216 ngày để đảm bảo đủ dữ liệu)
+        todate = dt.datetime.now()
+        fromdate = todate - timedelta(days=216)
+        from_timestamp = int(fromdate.timestamp())
+        to_timestamp = int(todate.timestamp())
+
+        # API URL và header từ VPS
+        url = f'https://web7.vps.com.vn/trading-view/api/public/history?symbol={symbol.upper()}&resolution=1D&from={from_timestamp}&to={to_timestamp}&countback=330'
         
-        df = pd.DataFrame(data)
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values(by='date')
+        r = requests.get(url, headers=head, timeout=10)
+        res_json = r.json()
         
-        df['pctChange'] = pd.to_numeric(df['pctChange'], errors='coerce')
-        df['volume'] = pd.to_numeric(df['nmVolume'], errors='coerce').fillna(0) + pd.to_numeric(df['ptVolume'], errors='coerce').fillna(0)
+        if not res_json or 's' not in res_json or res_json['s'] != 'ok':
+            return None
+            
+        data = pd.DataFrame(res_json)
+        df = pd.DataFrame({
+            'timestamp': data['t'],
+            'close': data['c'],
+            'volume': data['v']
+        })
         
-        if df['volume'].tail(100).mean() < 396000:
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s') + timedelta(hours=7)
+        df['date'] = df['datetime'].dt.strftime('%Y-%m-%d')
+        
+        # Tính % thay đổi giá (pctChange)
+        df['pctChange'] = round(df['close'].pct_change() * 100, 2)
+        
+        # Sắp xếp theo ngày tăng dần để kiểm tra điều kiện thanh khoản 100 phiên
+        df = df.sort_values(by='date').reset_index(drop=True)
+        
+        df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
+        if len(df) >= 100 and df['volume'].tail(100).mean() < 396000:
             return None
 
-        last = df.iloc[-1]
-        vol_mean_21 = df['volume'].tail(21).mean()
-        kl_tb21 = (last['volume'] / vol_mean_21) if vol_mean_21 > 0 else 0
+        df_desc = df.sort_values(by='date', ascending=False).reset_index(drop=True)
         
-        return {'bd_gia': last['pctChange'], 'kl_tb21': kl_tb21}
-    except:
+        last = df_desc.iloc[0]
+        bd_gia = pd.to_numeric(last['pctChange'], errors='coerce')
+        
+        # Tính khối lượng trung bình 21 phiên gần nhất
+        vol_mean_21 = pd.to_numeric(df_desc['volume'].iloc[:21].mean(), errors='coerce')
+        kl_tb21 = (pd.to_numeric(last['volume'], errors='coerce') / vol_mean_21) if vol_mean_21 > 0 else 0
+        
+        return {'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
+        
+    except Exception:
         return None
 
 def main():
