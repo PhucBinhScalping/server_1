@@ -7,7 +7,7 @@ concurrency:
 on:
   # Lịch chạy tự động (Giờ UTC = Giờ VN - 7)
   schedule:
-    - cron: '0,20,40 * * * *'
+    - cron: '15,45 * * * *'
     
     
   # Cho phép kích hoạt thủ công bằng nút "Run workflow" trên giao diện GitHub
