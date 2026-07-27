@@ -6,12 +6,12 @@ import plotly.graph_objects as io_go
 from datetime import datetime, timedelta
 import pytz
 from concurrent.futures import ThreadPoolExecutor
+from user_agent import random_user
 
 # Cấu hình hệ thống
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 TEMPLATE_FILE = "template.html"
 OUTPUT_FILE = "index.html"
-HEAD = {"User-Agent": "Mozilla/5.0"}
 session = requests.Session()
 
 import datetime as dt
@@ -19,55 +19,81 @@ from datetime import timedelta
 import pandas as pd
 import requests
 
+HEAD = {
+    "User-Agent": random_user()
+}
+
 def tinh_du_lieu_cp(symbol):
     try:
-        # Thiết lập thời gian (lấy khoảng 216 ngày để đảm bảo đủ dữ liệu)
+        # 1. Bổ sung prefix cho symbol nếu thiếu (mặc định thử HOSE nếu gọi trực tiếp)
+        clean_symbol = symbol.strip().upper()
+        
+        # 2. Thiết lập thời gian (TradingView API sử dụng timestamp giây)
         todate = dt.datetime.now()
-        fromdate = todate - timedelta(days=216)
+        fromdate = todate - timedelta(days=365) # Mở rộng ra 365 ngày để đảm bảo đủ >100 phiên giao dịch (trừ lễ/cuối tuần)
+        
         from_timestamp = int(fromdate.timestamp())
         to_timestamp = int(todate.timestamp())
 
-        # API URL và header từ VPS
-        url = f'https://web7.vps.com.vn/trading-view/api/public/history?symbol={symbol.upper()}&resolution=1D&from={from_timestamp}&to={to_timestamp}&countback=330'
+        # 3. URL chuẩn của VPS TradingView
+        url = f'https://web7.vps.com.vn/trading-view/api/public/history?symbol={clean_symbol}&resolution=1D&from={from_timestamp}&to={to_timestamp}'
         
-        r = requests.get(url, headers=head, timeout=10)
-        res_json = r.json()
+        # Sửa lỗi: Dùng HEAD viết hoa
+        r = requests.get(url, headers=HEAD, timeout=10)
         
-        if not res_json or 's' not in res_json or res_json['s'] != 'ok':
+        if r.status_code != 200:
             return None
             
-        data = pd.DataFrame(res_json)
+        res_json = r.json()
+        
+        # Kiểm tra phản hồi từ API
+        if not res_json or res_json.get('s') != 'ok':
+            return None
+            
+        # 4. Trích xuất dữ liệu an toàn
         df = pd.DataFrame({
-            'timestamp': data['t'],
-            'close': data['c'],
-            'volume': data['v']
+            'timestamp': res_json['t'],
+            'close': res_json['c'],
+            'volume': res_json['v']
         })
         
-        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s') + timedelta(hours=7)
-        df['date'] = df['datetime'].dt.strftime('%Y-%m-%d')
-        
-        # Tính % thay đổi giá (pctChange)
-        df['pctChange'] = round(df['close'].pct_change() * 100, 2)
-        
-        # Sắp xếp theo ngày tăng dần để kiểm tra điều kiện thanh khoản 100 phiên
-        df = df.sort_values(by='date').reset_index(drop=True)
-        
-        df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
-        if len(df) >= 100 and df['volume'].tail(100).mean() < 396000:
+        if df.empty:
             return None
 
+        # Quy đổi thời gian & sắp xếp
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s') + timedelta(hours=7)
+        df['date'] = df['datetime'].dt.strftime('%Y-%m-%d')
+        df = df.sort_values(by='date').reset_index(drop=True)
+        
+        # Ep kiểu dữ liệu số
+        df['close'] = pd.to_numeric(df['close'], errors='coerce')
+        df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
+        
+        # Tính % thay đổi giá
+        df['pctChange'] = df['close'].pct_change() * 100
+        
+        # 5. Kiểm tra điều kiện thanh khoản (100 phiên gần nhất)
+        if len(df) < 100:
+            return None
+            
+        if df['volume'].tail(100).mean() < 396000:
+            return None
+
+        # Lấy dữ liệu phiên gần nhất (mới nhất)
         df_desc = df.sort_values(by='date', ascending=False).reset_index(drop=True)
-        
         last = df_desc.iloc[0]
-        bd_gia = pd.to_numeric(last['pctChange'], errors='coerce')
         
-        # Tính khối lượng trung bình 21 phiên gần nhất
-        vol_mean_21 = pd.to_numeric(df_desc['volume'].iloc[:21].mean(), errors='coerce')
-        kl_tb21 = (pd.to_numeric(last['volume'], errors='coerce') / vol_mean_21) if vol_mean_21 > 0 else 0
+        bd_gia = round(float(last['pctChange']), 2) if pd.notnull(last['pctChange']) else 0.0
+        
+        # Tính khối lượng trung bình 21 phiên
+        vol_mean_21 = df_desc['volume'].iloc[:21].mean()
+        kl_tb21 = round(float(last['volume'] / vol_mean_21), 2) if vol_mean_21 > 0 else 0.0
         
         return {'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
         
-    except Exception:
+    except Exception as e:
+        # Gợi ý: Bỏ comment dòng dưới nếu muốn debug xem lỗi cụ thể là gì
+        # print(f"Lỗi mã {symbol}: {e}")
         return None
 
 def main():
