@@ -1,12 +1,12 @@
 name: Quick Update Index
 
-# CHÈN VÀO ĐÂY: Giúp xếp hàng các lượt chạy deploy, tránh lỗi nghẽn hệ thống
 concurrency:
   group: github-pages-deploy
   cancel-in-progress: false
+
 on:
   schedule:
-    - cron: '05,35 * * * *'
+    - cron: '0,30 * * * *'
   push:
     branches:
       - main
@@ -19,20 +19,21 @@ jobs:
       contents: write
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v5
-        
+        uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          
+
       - name: Install dependencies
         run: pip install requests pandas beautifulsoup4 plotly user_agent openpyxl kaleido pytz
-          
+
       - name: Run Scripts
         run: |
           echo "Kích hoạt cập nhật dữ liệu thị trường..."
           python main.py
+          python update_index_only.py
 
       - name: Commit and Push
         run: |
@@ -42,7 +43,7 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "Quick update index: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
             
-            # Khôi phục/xóa tất cả thay đổi dư thừa còn sót lại để thư mục làm việc hoàn toàn "sạch"
+            # Khôi phục/xóa tất cả thay đổi dư thừa còn sót lại
             git checkout -- .
             git clean -fd
             
