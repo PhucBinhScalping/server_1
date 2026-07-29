@@ -38,11 +38,14 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          
+          # ĐÃ SỬA: Thêm chart_only.html vào theo dõi
+          git add index.html chart_only.html
+          
           if ! git diff --staged --quiet; then
             git commit -m "Quick update index: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
             
-            # Khôi phục/xóa tất cả thay đổi dư thừa còn sót lại
+            # Khôi phục/xóa các file thừa khác ngoại trừ những file đã được git add
             git checkout -- .
             git clean -fd
             
