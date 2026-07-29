@@ -12,6 +12,7 @@ from user_agent import random_user
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 TEMPLATE_FILE = "template.html"
 OUTPUT_FILE = "index.html"
+CHART_ONLY_FILE = "chart_only.html"
 session = requests.Session()
 
 import datetime as dt
@@ -161,7 +162,7 @@ def main():
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
-    with open("chart_only.html", "w", encoding="utf-8") as f:
+    with open(CHART_ONLY_FILE, "w", encoding="utf-8") as f:
         f.write(chart_render)
     
     # 2. Khối HTML Việt Nam (Ăn theo cấu trúc class của template)
