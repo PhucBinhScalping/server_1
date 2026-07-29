@@ -33,23 +33,25 @@ jobs:
           echo "Kích hoạt cập nhật dữ liệu thị trường..."
           python main.py
           python update_index_only.py
-
+          
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # ĐÃ SỬA: Thêm chart_only.html vào theo dõi
+          # Thêm các file cần thiết
           git add index.html chart_only.png
           
           if ! git diff --staged --quiet; then
             git commit -m "Quick update index: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
             
-            # Khôi phục/xóa các file thừa khác ngoại trừ những file đã được git add
+            # Khôi phục/xóa các file thừa
             git checkout -- .
             git clean -fd
             
-            git pull origin main --rebase
+            # SỬA LỖI Ở ĐÂY: Dùng merge thay vì rebase, và buộc ưu tiên file local (ours) của bot nếu có xung đột
+            git pull origin main --no-rebase -X ours
+            
             git push origin main
           else
             echo "Không có dữ liệu mới."
