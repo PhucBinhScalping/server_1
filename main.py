@@ -8,11 +8,12 @@ import pytz
 from concurrent.futures import ThreadPoolExecutor
 from user_agent import random_user
 
+
 # Cấu hình hệ thống
 FILE_DANH_SACH = "danh_sach_cong_ty.xlsx"
 TEMPLATE_FILE = "template.html"
 OUTPUT_FILE = "index.html"
-CHART_ONLY_FILE = "chart_only.html"
+CHART_ONLY_FILE = "chart_only.png"
 session = requests.Session()
 
 import datetime as dt
@@ -161,9 +162,8 @@ def main():
 
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
-    
-    with open(CHART_ONLY_FILE, "w", encoding="utf-8") as f:
-        f.write(chart_render)
+
+    fig.write_image(CHART_ONLY_FILE, format="png", width=1200, height=600, scale=2)
     
     # 2. Khối HTML Việt Nam (Ăn theo cấu trúc class của template)
     vietnam_block_html = f"""
