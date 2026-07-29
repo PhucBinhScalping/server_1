@@ -161,6 +161,9 @@ def main():
     chart_config = {'responsive': True}
     chart_render = fig.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
     
+    with open("chart_only.html", "w", encoding="utf-8") as f:
+        f.write(chart_render)
+    
     # 2. Khối HTML Việt Nam (Ăn theo cấu trúc class của template)
     vietnam_block_html = f"""
     <div style="text-align: right; font-size: 13px; color: #666; margin-bottom: 5px; font-style: italic;">
