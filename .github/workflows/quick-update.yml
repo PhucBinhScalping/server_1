@@ -6,8 +6,13 @@ concurrency:
 
 on:
   schedule:
-    # Chạy mỗi 15 phút từ 02:00 UTC đến 08:00 UTC (Tương đương 09:00 AM - 15:00 PM GMT+7), T2-T6
+    # Chạy tự động dự phòng mỗi 15 phút từ 02:00 UTC đến 08:00 UTC (09:00 AM - 15:00 PM GMT+7), T2-T6
     - cron: '*/15 2-8 * * 1-5'
+  
+  # === BỔ SUNG ĐOẠN NÀY ĐỂ NHẬN TÍN HIỆU TỪ CRON-JOB.ORG ===
+  repository_dispatch:
+    types: [external_trigger]
+    
   push:
     branches:
       - main
@@ -37,7 +42,6 @@ jobs:
           python main.py
           python update_index_only.py
 
-          
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
