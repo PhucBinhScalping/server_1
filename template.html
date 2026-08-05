@@ -154,8 +154,15 @@
     <div class="main-wrapper">
         <div class="container">
             <h1>📈 Diễn Biến Thị Trường</h1>
+            <!-- 1. BIỂU ĐỒ VN30 (NẰM TRÊN) -->
             <div class="market-update-box">
-                <!-- Vùng chứa biểu đồ có thanh cuộn bảo vệ -->
+                <div class="content-scroll-wrapper">
+                    {{CHART_DIEN_BIEN_VN30}}
+                </div>
+            </div>
+            
+            <!-- 2. BIỂU ĐỒ NGÀNH (NẰM DƯỚI) -->
+            <div class="market-update-box">
                 <div class="content-scroll-wrapper">
                     {{CHART_DIEN_BIEN}}
                 </div>
