@@ -49,9 +49,13 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "Quick update index: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
             
-            # Kéo code mới nhất từ main về và tự động ưu tiên lấy dữ liệu mới từ bot (ours)
-            git pull origin main --no-rebase -X ours -m "Auto merge from bot"
+            # 1. Tải dữ liệu mới nhất từ server về
+            git fetch origin main
             
+            # 2. Merge vào nhánh hiện tại (Ưu tiên lấy file local của bot nếu bị xung đột)
+            git merge origin/main -X ours -m "Auto merge from bot"
+            
+            # 3. Push lên GitHub
             git push origin main
           else
             echo "Không có dữ liệu mới."
