@@ -37,6 +37,7 @@ jobs:
           python main.py
           python update_index_only.py
 
+          
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
@@ -48,9 +49,8 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "Quick update index: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
             
-            # Xử lý xung đột code an toàn
-            git fetch origin main
-            git merge origin/main --no-rebase -X ours -m "Auto merge from bot"
+            # Kéo code mới nhất từ main về và tự động ưu tiên lấy dữ liệu mới từ bot (ours)
+            git pull origin main --no-rebase -X ours -m "Auto merge from bot"
             
             git push origin main
           else
