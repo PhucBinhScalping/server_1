@@ -188,7 +188,7 @@ def main():
     chart_config = {'responsive': True}
 
     # Biểu đồ 1: VN30 (Nằm ĐẦU PAGE -> Phải tải thư viện JS với include_plotlyjs='cdn')
-    df_final_vn30 = pd.DataFrame(results_vn30).sort_values('percent_change', ascending=False)
+    df_final_vn30 = pd.DataFrame(results_vn30).sort_values('percent_change', ascending=True)
     fig_vn30 = tao_bieu_do_plotly(df_final_vn30, "Biến động danh mục VN30", time_str)
     chart_vn30_html = fig_vn30.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
 
