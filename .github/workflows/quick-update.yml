@@ -2,10 +2,12 @@ name: Quick Update Index
 
 concurrency:
   group: github-pages-deploy
+  cancel-in-progress: true  # Tự hủy job cũ nếu job mới chạy đè lên
 
 on:
   schedule:
-    - cron: '0,30 * * * *'
+    # Chạy mỗi 15 phút từ 02:00 UTC đến 08:00 UTC (Tương đương 09:00 AM - 15:00 PM GMT+7), T2-T6
+    - cron: '*/15 2-8 * * 1-5'
   push:
     branches:
       - main
@@ -24,6 +26,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: 'pip' # Tối ưu tốc độ cài thư viện
 
       - name: Install dependencies
         run: pip install requests pandas beautifulsoup4 plotly user_agent openpyxl kaleido pytz
@@ -33,7 +36,7 @@ jobs:
           echo "Kích hoạt cập nhật dữ liệu thị trường..."
           python main.py
           python update_index_only.py
-          
+
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
@@ -45,12 +48,9 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "Quick update index: $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S')"
             
-            # Khôi phục/xóa các file thừa
-            git checkout -- .
-            git clean -fd
-            
-            # SỬA LỖI Ở ĐÂY: Dùng merge thay vì rebase, và buộc ưu tiên file local (ours) của bot nếu có xung đột
-            git pull origin main --no-rebase -X ours
+            # Xử lý xung đột code an toàn
+            git fetch origin main
+            git merge origin/main --no-rebase -X ours -m "Auto merge from bot"
             
             git push origin main
           else
