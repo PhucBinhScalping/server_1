@@ -73,7 +73,6 @@ def tinh_du_lieu_cp(symbol):
         vol_mean_21 = df_desc['volume'].iloc[:21].mean()
         kl_tb21 = round(float(last['volume'] / vol_mean_21), 2) if vol_mean_21 > 0 else 0.0
         
-        # Bổ sung key 'symbol' để đối chiếu mã trong danh mục VN30
         return {'symbol': clean_symbol, 'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
         
     except Exception as e:
@@ -184,20 +183,20 @@ def main():
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
 
     # ----------------------------------------------------
-    # 3. VẼ BIỂU ĐỒ & CHUYỂN DẠNG HTML
+    # 3. VẼ BIỂU ĐỒ & CHUYỂN DẠNG HTML (ĐÃ SỬA VỊ TRÍ TẢI JS)
     # ----------------------------------------------------
     chart_config = {'responsive': True}
 
-    # Biểu đồ 1: Ngành
-    df_final_nganh = pd.DataFrame(results_nganh)
-    fig_nganh = tao_bieu_do_plotly(df_final_nganh, "Biến động ngành", time_str)
-    chart_nganh_html = fig_nganh.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
-    fig_nganh.write_image(CHART_ONLY_FILE, format="png", width=1200, height=600, scale=2)
-
-    # Biểu đồ 2: VN30 (Sắp xếp theo % biến động giảm dần)
+    # Biểu đồ 1: VN30 (Nằm ĐẦU PAGE -> Phải tải thư viện JS với include_plotlyjs='cdn')
     df_final_vn30 = pd.DataFrame(results_vn30).sort_values('percent_change', ascending=False)
     fig_vn30 = tao_bieu_do_plotly(df_final_vn30, "Biến động danh mục VN30", time_str)
-    chart_vn30_html = fig_vn30.to_html(full_html=False, include_plotlyjs=False, config=chart_config)
+    chart_vn30_html = fig_vn30.to_html(full_html=False, include_plotlyjs='cdn', config=chart_config)
+
+    # Biểu đồ 2: Ngành (Nằm DƯỚI -> Không tải trùng lại JS nên chọn include_plotlyjs=False)
+    df_final_nganh = pd.DataFrame(results_nganh)
+    fig_nganh = tao_bieu_do_plotly(df_final_nganh, "Biến động ngành", time_str)
+    chart_nganh_html = fig_nganh.to_html(full_html=False, include_plotlyjs=False, config=chart_config)
+    fig_nganh.write_image(CHART_ONLY_FILE, format="png", width=1200, height=600, scale=2)
 
     # ----------------------------------------------------
     # 4. NHÚNG HTML VÀO TEMPLATE
