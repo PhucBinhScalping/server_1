@@ -18,65 +18,51 @@ session = requests.Session()
 HEAD = {
     "User-Agent": random_user()
 }
-
 def tinh_du_lieu_cp(symbol):
-    try:
-        clean_symbol = str(symbol).strip().upper()
-        
-        todate = datetime.now()
-        fromdate = todate - timedelta(days=156)
+    clean_symbol = str(symbol).strip().upper()
+    todate = datetime.now()
+    fromdate = todate - timedelta(days=156)
+    from_timestamp = int(fromdate.timestamp())
+    to_timestamp = int(todate.timestamp())
 
-        from_timestamp = int(fromdate.timestamp())
-        to_timestamp = int(todate.timestamp())
+    # Danh sách các nguồn API dự phòng
+    urls = [
+        f'https://web7.vps.com.vn/trading-view/api/public/history?symbol={clean_symbol}&resolution=1D&from={from_timestamp}&to={to_timestamp}',
+        f'https://dchart-api.vndirect.com.vn/dchart/history?resolution=D&symbol={clean_symbol}&from={from_timestamp}&to={to_timestamp}'
+    ]
 
-        # URL gốc truyền trực tiếp symbol không qua tiền tố
-        url = f'https://web7.vps.com.vn/trading-view/api/public/history?symbol={clean_symbol}&resolution=1D&from={from_timestamp}&to={to_timestamp}'
-        
-        r = requests.get(url, headers=HEAD, timeout=10)
-        
-        if r.status_code != 200:
-            return None
-            
-        res_json = r.json()
-        
-        if not res_json or res_json.get('s') != 'ok':
-            return None
-            
-        df = pd.DataFrame({
-            'timestamp': res_json['t'],
-            'close': res_json['c'],
-            'volume': res_json['v']
-        })
-        
-        if df.empty:
-            return None
+    for url in urls:
+        for attempt in range(2): # Thử lại tối đa 2 lần mỗi API
+            try:
+                r = requests.get(url, headers={"User-Agent": random_user()}, timeout=5)
+                if r.status_code == 200:
+                    res_json = r.json()
+                    if res_json and res_json.get('s') == 'ok' and len(res_json.get('t', [])) > 0:
+                        df = pd.DataFrame({
+                            'timestamp': res_json['t'],
+                            'close': res_json['c'],
+                            'volume': res_json['v']
+                        })
+                        
+                        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s') + timedelta(hours=7)
+                        df['date'] = df['datetime'].dt.strftime('%Y-%m-%d')
+                        df = df.sort_values(by='date').reset_index(drop=True)
+                        
+                        df['close'] = pd.to_numeric(df['close'], errors='coerce')
+                        df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
+                        df['pctChange'] = df['close'].pct_change() * 100
 
-        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s') + timedelta(hours=7)
-        df['date'] = df['datetime'].dt.strftime('%Y-%m-%d')
-        df = df.sort_values(by='date').reset_index(drop=True)
-        
-        df['close'] = pd.to_numeric(df['close'], errors='coerce')
-        df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
-        df['pctChange'] = df['close'].pct_change() * 100
-        
-        if len(df) < 100:
-            return None
-            
-        if df['volume'].tail(100).mean() < 200000:
-            return None
+                        df_desc = df.sort_values(by='date', ascending=False).reset_index(drop=True)
+                        last = df_desc.iloc[0]
+                        
+                        bd_gia = round(float(last['pctChange']), 2) if pd.notnull(last['pctChange']) else 0.0
+                        vol_mean_21 = df_desc['volume'].iloc[:21].mean()
+                        kl_tb21 = round(float(last['volume'] / vol_mean_21), 2) if vol_mean_21 > 0 else 0.0
 
-        df_desc = df.sort_values(by='date', ascending=False).reset_index(drop=True)
-        last = df_desc.iloc[0]
-        
-        bd_gia = round(float(last['pctChange']), 2) if pd.notnull(last['pctChange']) else 0.0
-        
-        vol_mean_21 = df_desc['volume'].iloc[:21].mean()
-        kl_tb21 = round(float(last['volume'] / vol_mean_21), 2) if vol_mean_21 > 0 else 0.0
-        
-        return {'symbol': clean_symbol, 'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
-        
-    except Exception as e:
-        return None
+                        return {'symbol': clean_symbol, 'bd_gia': bd_gia, 'kl_tb21': kl_tb21}
+            except Exception:
+                continue
+    return None
 
 def tao_bieu_do_plotly(df, title_prefix, time_str):
     """Hàm vẽ biểu đồ Plotly chung cho cả Ngành và VN30"""
@@ -166,10 +152,12 @@ def main():
     results_vn30 = []
     for symbol in list_vn30:
         found = next((item for item in data_vn30_raw if item and item.get('symbol') == symbol), None)
-        results_vn30.append({
-            'name': symbol,
-            'percent_change': found['bd_gia'],
-            'volume_ratio': found['kl_tb21']})
+        if found:
+            results_vn30.append({
+                'name': symbol,
+                'percent_change': found['bd_gia'],
+                'volume_ratio': found['kl_tb21']
+            })
 
     vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
