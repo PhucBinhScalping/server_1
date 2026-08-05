@@ -166,18 +166,10 @@ def main():
     results_vn30 = []
     for symbol in list_vn30:
         found = next((item for item in data_vn30_raw if item and item.get('symbol') == symbol), None)
-        if found:
-            results_vn30.append({
-                'name': symbol,
-                'percent_change': found['bd_gia'],
-                'volume_ratio': found['kl_tb21']
-            })
-        else:
-            results_vn30.append({
-                'name': symbol,
-                'percent_change': 0.0,
-                'volume_ratio': 0.0
-            })
+        results_vn30.append({
+            'name': symbol,
+            'percent_change': found['bd_gia'],
+            'volume_ratio': found['kl_tb21']})
 
     vn_now = datetime.now(pytz.timezone('Asia/Ho_Chi_Minh'))
     time_str = vn_now.strftime('%d-%m-%Y %H:%M:%S')
