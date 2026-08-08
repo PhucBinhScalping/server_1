@@ -7,7 +7,7 @@ concurrency:
 on:
   schedule:
     # Chạy mỗi 15 phút từ 02:00 UTC đến 08:00 UTC (Tương đương 09:00 AM - 15:00 PM GMT+7), T2-T6
-    - cron: '*/30  * * * *'
+    - cron: '*/36  * * * *'
   push:
     branches:
       - main
